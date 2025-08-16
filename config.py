@@ -2,6 +2,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_redis import RedisVectorStore, RedisConfig
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+import pickle
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,20 +13,26 @@ llm = ChatGoogleGenerativeAI(
     temperature=0.7
 )
 
+
 # --- Embeddings Model ---
-# A single embedding model is used for both the ChromaDB vector store
-# and the Redis cache to ensure vector consistency.
+# A single embedding model is used for both the ChromaDB vector store and the Redis cache.
 embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 
-# --- Vector Store for Retrieval (ChromaDB) ---
-chroma_path = "Data/chroma_db"
 
+# --- Vector Store for Retrieval (ChromaDB nad BM25) ---
+chroma_path = "Data/chroma_db"
 chroma_store = Chroma(
     collection_name="financial_filings",
     embedding_function=embeddings,
     persist_directory=chroma_path
 )
+# --- Keyword Retriever (BM25) ---
+bm25_path = "Data/bm25_retriever.pkl"
+with open(bm25_path, "rb") as f:
+    bm25_retriever = pickle.load(f)
+bm25_retriever.k = 3 # Set the number of results to return
+
 
 
 # --- Vector Store for Caching (Redis) ---

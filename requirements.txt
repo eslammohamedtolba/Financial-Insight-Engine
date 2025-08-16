@@ -8,3 +8,4 @@ streamlit>=1.0.0
 langchain_community>=0.3.27
 langchain_redis>=0.2.3
 fastembed>=0.0.1
+rank_bm25>=0.2.2

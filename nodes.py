@@ -1,7 +1,6 @@
 from langchain_core.messages import AIMessage
 from langchain_core.documents import Document
-
-from config import cache_store, chroma_store, llm
+from config import cache_store, chroma_store, bm25_retriever, llm
 from state import QueryConstruct, FinancialAnalysisState, Metadata
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -19,9 +18,7 @@ def check_cache(state: FinancialAnalysisState):
     # Note: `similarity_search_with_score` returns a list of tuples (document, score)
     results = cache_store.similarity_search_with_score(query=query, k=1)
     
-    print(f"The results: {results}\n\n")
-    
-    if results and (1 - results[0][1] >= 0.9):  # Check for a cache hit with a 0.9 similarity threshold
+    if results and (1 - abs(results[0][1]) >= 0.85):  # Check for a cache hit with a 0.85 similarity threshold
         # Cache hit, retrieve the stored answer
         cached_answer = results[0][0].metadata.get("response")
         state['cache_hit'] = True
@@ -86,40 +83,59 @@ def query_construct(state: FinancialAnalysisState):
 # --- Node 3: Retriever ---
 def retrieve(state: FinancialAnalysisState):
     """
-    Retrieves documents from the ChromaDB vector store based on the constructed query and filter.
+    Retrieves documents using a manual hybrid search approach by:
+    1. Performing a filtered semantic search with ChromaDB.
+    2. Performing a keyword search with BM25.
+    3. Combining and de-duplicating the results to create a rich context.
     """
-    print("---NODE: RETRIEVER---")
+    print("---NODE: MANUAL HYBRID RETRIEVE---")
+
     query_text = state['messages'][-1].content
     metadata_filter = state['query_construction'].filter.model_dump()
     
-    # Remove filters that have None values
+    # This part remains the same: build the filter for ChromaDB
     cleaned_filter = {k: v for k, v in metadata_filter.items() if v is not None}
-    
-    # Perform a filtered similarity search
     if len(cleaned_filter) > 1:
         where_clause = {"$and": [{key: {"$eq": value}} for key, value in cleaned_filter.items()]}
     elif len(cleaned_filter) == 1:
         key, value = next(iter(cleaned_filter.items()))
         where_clause = {key: {"$eq": value}}
     else:
-        where_clause = None  # No filter if no valid metadata is found
+        where_clause = None
 
-    print(f"Retrieving with filter: {where_clause}")
+    print(f"Retrieving with Chroma filter: {where_clause}")
 
     try:
-        # Use 'filter' parameter instead of 'where'
-        retrieved_docs = chroma_store.similarity_search(
+        # 1. Get documents from semantic search (ChromaDB)
+        semantic_docs = chroma_store.similarity_search(
             query=query_text,
             filter=where_clause,
-            k=3  # Retrieve top 3 documents
+            k=3
         )
+        print(f"Retrieved {len(semantic_docs)} documents from ChromaDB.")
+
+        # 2. Get documents from keyword search (BM25)
+        keyword_docs = bm25_retriever.invoke(query_text)
+        print(f"Retrieved {len(keyword_docs)} documents from BM25.")
+
+        # 3. Combine and de-duplicate the results
+        # We create a final list of unique documents to avoid sending redundant
+        # context to the LLM.
+        combined_docs = semantic_docs + keyword_docs
+        seen_contents = set()
+        unique_docs = []
+        for doc in combined_docs:
+            if doc.page_content not in seen_contents:
+                unique_docs.append(doc)
+                seen_contents.add(doc.page_content)
         
-        state['source_documents'] = [doc.page_content for doc in retrieved_docs]
-        print(f"Retrieved {len(retrieved_docs)} documents.")
+        print(f"Combined and de-duplicated to {len(unique_docs)} unique documents.")
+
+        # 4. Update state with the unique document contents
+        state['source_documents'] = [doc.page_content for doc in unique_docs]
         
     except Exception as e:
         print(f"Error during retrieval: {e}")
-        # If retrieval fails, set empty documents
         state['source_documents'] = []
         print("Set empty document list due to retrieval error.")
     

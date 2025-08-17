@@ -1,4 +1,4 @@
 .env
-*.sqlite
+*.sqlite*
 Data/chroma_db
 __pycache__

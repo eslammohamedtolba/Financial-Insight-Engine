@@ -1,8 +1,6 @@
-# graph.py
-
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
-import sqlite3 
+import sqlite3
 
 from nodes import check_cache, query_construct, retrieve, generate_answer
 from state import FinancialAnalysisState

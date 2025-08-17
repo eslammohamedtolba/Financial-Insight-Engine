@@ -3,6 +3,7 @@ from langchain_redis import RedisVectorStore, RedisConfig
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 import pickle
+from sentence_transformers import CrossEncoder
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,7 +21,7 @@ embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 
 
-# --- Vector Store for Retrieval (ChromaDB nad BM25) ---
+# --- Vector Store for Retrieval (ChromaDB) ---
 chroma_path = "Data/chroma_db"
 chroma_store = Chroma(
     collection_name="financial_filings",
@@ -52,3 +53,7 @@ cache_store = RedisVectorStore(
         ],
     )
 )
+
+
+# --- Reranker Model (cross-encoder) ---
+reranker_model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')

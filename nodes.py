@@ -1,6 +1,6 @@
 from langchain_core.messages import AIMessage
 from langchain_core.documents import Document
-from config import cache_store, chroma_store, bm25_retriever, llm
+from config import cache_store, chroma_store, bm25_retriever, llm, reranker_model
 from state import QueryConstruct, FinancialAnalysisState, Metadata
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -10,7 +10,6 @@ def check_cache(state: FinancialAnalysisState):
     Checks if the user's query is in the Redis cache.
     """
     print("---NODE: CHECK CACHE---")
-    print(f"Length of messages: {len(state['messages'])}\n")
     # Get the last human message
     query = state['messages'][-1].content
     
@@ -23,11 +22,9 @@ def check_cache(state: FinancialAnalysisState):
         cached_answer = results[0][0].metadata.get("response")
         state['cache_hit'] = True
         state['messages'].append(AIMessage(content=cached_answer))
-        print("Cache hit detected.")
     else:
         # No cache hit
         state['cache_hit'] = False
-        print("No cache hit.")
     
     return state
 
@@ -63,37 +60,33 @@ def query_construct(state: FinancialAnalysisState):
         
         # If the output is None or invalid, create a default QueryConstruct
         if query_construct_output is None:
-            print("LLM returned None, creating default QueryConstruct")
             query_construct_output = QueryConstruct(filter=Metadata())
         
         # Update the state with the constructed filter
         state['query_construction'] = query_construct_output
         
-        print(f"Constructed Filter: {query_construct_output.filter.model_dump()}")
-        
     except Exception as e:
-        print(f"Error in query construction: {e}")
-        print("Creating default QueryConstruct")
         # Create a fallback QueryConstruct if structured output fails
         state['query_construction'] = QueryConstruct(filter=Metadata())
-        print(f"Default Filter: {state['query_construction'].filter.model_dump()}")
     
     return state
 
 # --- Node 3: Retriever ---
 def retrieve(state: FinancialAnalysisState):
     """
-    Retrieves documents using a manual hybrid search approach by:
-    1. Performing a filtered semantic search with ChromaDB.
-    2. Performing a keyword search with BM25.
-    3. Combining and de-duplicating the results to create a rich context.
+    Retrieves documents using a hybrid search approach, then reranks them for relevance.
+    1. Performs a filtered semantic search with ChromaDB.
+    2. Performs a keyword search with BM25.
+    3. Combines and de-duplicates the results.
+    4. Reranks the unique documents using a Cross-Encoder model.
+    5. Selects the top N documents to create a rich, focused context.
     """
-    print("---NODE: MANUAL HYBRID RETRIEVE---")
+    print("---NODE: MANUAL HYBRID RETRIEVE & RERANK---")
 
     query_text = state['messages'][-1].content
     metadata_filter = state['query_construction'].filter.model_dump()
     
-    # This part remains the same: build the filter for ChromaDB
+    # Build the filter for ChromaDB
     cleaned_filter = {k: v for k, v in metadata_filter.items() if v is not None}
     if len(cleaned_filter) > 1:
         where_clause = {"$and": [{key: {"$eq": value}} for key, value in cleaned_filter.items()]}
@@ -103,24 +96,18 @@ def retrieve(state: FinancialAnalysisState):
     else:
         where_clause = None
 
-    print(f"Retrieving with Chroma filter: {where_clause}")
-
     try:
-        # 1. Get documents from semantic search (ChromaDB)
+        # Get documents from semantic search (ChromaDB)
         semantic_docs = chroma_store.similarity_search(
             query=query_text,
             filter=where_clause,
             k=3
         )
-        print(f"Retrieved {len(semantic_docs)} documents from ChromaDB.")
 
-        # 2. Get documents from keyword search (BM25)
+        # Get documents from keyword search (BM25)
         keyword_docs = bm25_retriever.invoke(query_text)
-        print(f"Retrieved {len(keyword_docs)} documents from BM25.")
 
-        # 3. Combine and de-duplicate the results
-        # We create a final list of unique documents to avoid sending redundant
-        # context to the LLM.
+        # Combine and de-duplicate the results
         combined_docs = semantic_docs + keyword_docs
         seen_contents = set()
         unique_docs = []
@@ -128,16 +115,28 @@ def retrieve(state: FinancialAnalysisState):
             if doc.page_content not in seen_contents:
                 unique_docs.append(doc)
                 seen_contents.add(doc.page_content)
-        
-        print(f"Combined and de-duplicated to {len(unique_docs)} unique documents.")
 
-        # 4. Update state with the unique document contents
-        state['source_documents'] = [doc.page_content for doc in unique_docs]
-        
+        # Reranking documents
+        if unique_docs:
+            # Create pairs of [query, document_content] for the reranker model
+            rerank_pairs = [[query_text, doc.page_content] for doc in unique_docs]
+            
+            # Get relevance scores from the model
+            scores = reranker_model.predict(rerank_pairs)
+            
+            # Combine documents with their scores and sort
+            scored_docs = list(zip(scores, unique_docs))
+            scored_docs.sort(reverse=True)
+
+            # Select the top 3 documents for the final context
+            top_n = 3
+            reranked_final_docs = [doc for score, doc in scored_docs[:top_n]]
+            state['source_documents'] = [doc.page_content for doc in reranked_final_docs]
+        else:
+            state['source_documents'] = []
+            
     except Exception as e:
-        print(f"Error during retrieval: {e}")
         state['source_documents'] = []
-        print("Set empty document list due to retrieval error.")
     
     return state
 
@@ -156,10 +155,8 @@ def generate_answer(state: FinancialAnalysisState):
     
     if documents:
         context = "\n\n".join(documents)
-        print(f"Using context from {len(documents)} documents.")
     else:
         context = "No relevant documents were found."
-        print("No documents available for context.")
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", 
@@ -181,13 +178,9 @@ def generate_answer(state: FinancialAnalysisState):
         new_doc = Document(page_content=original_query, metadata={"response": answer_message.content})
         cache_store.add_documents([new_doc])
         
-        print("Answer generated and stored in cache.")
-        
     except Exception as e:
-        print(f"Error generating answer: {e}")
         # Create a fallback response
         fallback_response = AIMessage(content=f"I apologize, but I encountered an error while processing your query: '{original_query}'. Please try again.")
         state['messages'].append(fallback_response)
-        print("Added fallback response due to error.")
     
     return state

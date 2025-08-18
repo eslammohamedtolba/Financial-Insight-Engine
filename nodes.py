@@ -4,12 +4,11 @@ from config import cache_store, chroma_store, bm25_retriever, llm, reranker_mode
 from state import QueryConstruct, FinancialAnalysisState, Metadata
 from langchain_core.prompts import ChatPromptTemplate
 
-# --- Node 1: Check Cache ---
+# Check Cache Node
 def check_cache(state: FinancialAnalysisState):
     """
     Checks if the user's query is in the Redis cache.
     """
-    print("---NODE: CHECK CACHE---")
     # Get the last human message
     query = state['messages'][-1].content
     
@@ -28,12 +27,11 @@ def check_cache(state: FinancialAnalysisState):
     
     return state
 
-# --- Node 2: Query Construction ---
+# Query Construction Node
 def query_construct(state: FinancialAnalysisState):
     """
     Uses an LLM to extract a search query and a metadata filter from the user's message.
     """
-    print("---NODE: QUERY CONSTRUCTION---")
     query = state['messages'][-1].content
     
     prompt = ChatPromptTemplate.from_messages([
@@ -71,7 +69,7 @@ def query_construct(state: FinancialAnalysisState):
     
     return state
 
-# --- Node 3: Retriever ---
+# Retriever Node
 def retrieve(state: FinancialAnalysisState):
     """
     Retrieves documents using a hybrid search approach, then reranks them for relevance.
@@ -81,7 +79,6 @@ def retrieve(state: FinancialAnalysisState):
     4. Reranks the unique documents using a Cross-Encoder model.
     5. Selects the top N documents to create a rich, focused context.
     """
-    print("---NODE: MANUAL HYBRID RETRIEVE & RERANK---")
 
     query_text = state['messages'][-1].content
     metadata_filter = state['query_construction'].filter.model_dump()
@@ -128,8 +125,8 @@ def retrieve(state: FinancialAnalysisState):
             scored_docs = list(zip(scores, unique_docs))
             scored_docs.sort(reverse=True)
 
-            # Select the top 3 documents for the final context
-            top_n = 3
+            # Select the top 2 documents for the final context
+            top_n = 2
             reranked_final_docs = [doc for score, doc in scored_docs[:top_n]]
             state['source_documents'] = [doc.page_content for doc in reranked_final_docs]
         else:
@@ -140,13 +137,12 @@ def retrieve(state: FinancialAnalysisState):
     
     return state
 
-# --- Node 4: Answer Question and Store in Cache ---
+# Answer Question Node
 def generate_answer(state: FinancialAnalysisState):
     """
     Generates a final answer using the LLM and retrieved documents as context,
     and stores the answer in the cache.
     """
-    print("---NODE: GENERATE ANSWER & CACHE---")
     # Get the original human query
     original_query = state['messages'][-1].content
     
@@ -159,24 +155,35 @@ def generate_answer(state: FinancialAnalysisState):
         context = "No relevant documents were found."
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", 
-         "You are a helpful assistant that answers questions based on provided documents. "
-         "Your answer must be concise, accurate, and directly reference the provided documents when available. "
-         "If the documents do not contain the answer, politely state that you cannot find the information in the available documents. "
-         "\n\nContext:\n{context}"),
-        ("human", "Question: {question}")
+        ("system",
+         "You are an expert Financial Analyst Assistant. Your purpose is to answer user questions about the financial performance and risks of major tech companies, using excerpts from their latest 10-K filings."
+         "\n\n"
+         "Follow these instructions carefully:\n"
+         "1. Analyze the provided 'Context' section, which contains relevant text from the filings.\n"
+         "2. Synthesize the information to form a concise, accurate, and insightful answer.\n"
+         "3. Adopt a professional and direct tone. Answer the question as if you have the knowledge yourself.\n"
+         "4. **Crucially, DO NOT** start your response with phrases like 'Based on the documents provided,' or 'According to the context.' The user already knows the information comes from these documents.\n"
+         "5. If the context does not contain the information needed to answer the question, state that you cannot find the relevant details in the available filings.\n"
+         "\n\n"
+         "Context:\n{context}"),
+        ("human", "{question}")
     ])
     
     try:
         chain = prompt | llm
         answer_message = chain.invoke({"context": context, "question": original_query})
         
-        # Update messages with the AI's response
-        state['messages'].append(answer_message)
-        
-        # Store the query and answer in the cache for future use
-        new_doc = Document(page_content=original_query, metadata={"response": answer_message.content})
-        cache_store.add_documents([new_doc])
+        # Check if the response from the LLM is empty (due to safety filters, etc.)
+        if not answer_message.content:
+            fallback_response = AIMessage(content="I was unable to generate a response for this query, possibly due to a content filter. Please try rephrasing your question.")
+            state['messages'].append(fallback_response)
+        else:
+            # Update messages with the AI's response
+            state['messages'].append(answer_message)
+            
+            # Store the query and answer in the cache for future use
+            new_doc = Document(page_content=original_query, metadata={"response": answer_message.content})
+            cache_store.add_documents([new_doc])
         
     except Exception as e:
         # Create a fallback response

@@ -1,24 +1,30 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
 from langchain_redis import RedisVectorStore, RedisConfig
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-import pickle
 from sentence_transformers import CrossEncoder
 from dotenv import load_dotenv
+import pickle
 
 load_dotenv()
 
 # --- Large Language Model ---
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-pro",
-    temperature=0.7
+    temperature=0.7,
+    # Relax safety settings to prevent Gemini from blocking valid responses for financial document analysis.
+    safety_settings={
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
 )
 
 
 # --- Embeddings Model ---
 # A single embedding model is used for both the ChromaDB vector store and the Redis cache.
 embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
-
 
 
 # --- Vector Store for Retrieval (ChromaDB) ---
@@ -33,7 +39,6 @@ bm25_path = "Data/bm25_retriever.pkl"
 with open(bm25_path, "rb") as f:
     bm25_retriever = pickle.load(f)
 bm25_retriever.k = 3 # Set the number of results to return
-
 
 
 # --- Vector Store for Caching (Redis) ---
@@ -57,3 +62,4 @@ cache_store = RedisVectorStore(
 
 # --- Reranker Model (cross-encoder) ---
 reranker_model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+

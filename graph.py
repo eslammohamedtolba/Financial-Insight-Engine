@@ -1,12 +1,20 @@
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
-import sqlite3
-
+from langgraph.checkpoint.postgres import PostgresSaver
+from db_utils import get_db_connection
 from nodes import check_cache, query_construct, retrieve, generate_answer
 from state import FinancialAnalysisState
 
-# --- Define the graph ---
+# --- Define conditional edge function ---
+def route_after_cache(state: FinancialAnalysisState):
+    """
+    Determines the next step based on whether a cache hit occurred.
+    """
+    if state['cache_hit']:
+        return "end"
+    else:
+        return "query_construct"
 
+# --- Define the graph ---
 def create_graph():
     workflow = StateGraph(FinancialAnalysisState)
 
@@ -15,18 +23,6 @@ def create_graph():
     workflow.add_node("query_construct", query_construct)
     workflow.add_node("retrieve", retrieve)
     workflow.add_node("generate_answer", generate_answer)
-
-    # --- Define conditional edge function ---
-    def route_after_cache(state: FinancialAnalysisState):
-        """
-        Determines the next step based on whether a cache hit occurred.
-        """
-        if state['cache_hit']:
-            print("---ROUTE: Cache hit, ending workflow.---")
-            return "end"
-        else:
-            print("---ROUTE: No cache hit, proceeding to query construction.---")
-            return "query_construct"
 
     # --- Add edges ---
     # connect the entry point to the cache check
@@ -47,9 +43,10 @@ def create_graph():
     workflow.add_edge("retrieve", "generate_answer")
     workflow.add_edge("generate_answer", END)
 
-    # --- Compile the graph with memory ---
-    sqlite_conn = sqlite3.connect("Data\\graph_memory.sqlite", check_same_thread=False)
-    memory = SqliteSaver(conn = sqlite_conn)
+    # The official checkpointer handles the connection and table setup
+    checkpointer = PostgresSaver(
+        conn=get_db_connection(autocommit=True)
+    )
     
-    return workflow.compile(checkpointer=memory)
+    return workflow.compile(checkpointer=checkpointer)
 

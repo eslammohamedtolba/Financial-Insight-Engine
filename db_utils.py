@@ -1,43 +1,56 @@
-import sqlite3
 import os
+import psycopg
+from dotenv import load_dotenv
 
-# Define the database path consistently with graph.py
-DB_DIR = "Data"
-DB_FILE = os.path.join(DB_DIR, "graph_memory.sqlite")
+load_dotenv()
 
-def get_db_connection():
-    """Establishes a connection to the SQLite database."""
-    # Ensure the directory for the database exists
-    os.makedirs(DB_DIR, exist_ok=True) 
-    return sqlite3.connect(DB_FILE, check_same_thread=False)
+def get_db_connection(autocommit=False):
+    """
+    Loads database configuration from environment variables, constructs the connection URL,
+    and establishes a connection to the PostgreSQL database using psycopg.
+    """
+    # --- Configuration logic is now inside this function ---
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    db_host = os.getenv("DB_HOST")
+    db_port = os.getenv("DB_PORT")
+    db_name = os.getenv("DB_NAME")
+
+    # Construct the database URL from the individual components
+    database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    
+    # Return the connection object
+    return psycopg.connect(database_url, autocommit=autocommit)
 
 def delete_conversation(thread_id: str):
     """
-    Deletes a conversation history for a given thread_id from the 'checkpoints' table.
-    
-    This function first checks if the 'checkpoints' table exists before attempting to 
-    delete from it, preventing errors for new users who haven't started a conversation yet.
+    Deletes a conversation history from both the 'checkpoints' and 'checkpoint_writes' tables
+    to ensure complete removal.
     """
     try:
+        # 'with' handles opening and closing the connection
         with get_db_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Check if the 'checkpoints' table exists in the database.
-            # We query the sqlite_master table which contains metadata about the database schema.
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='checkpoints'")
-            
-            # fetchone() will return None if the query finds no matching table.
-            if cursor.fetchone() is None:
-                print(f"Table 'checkpoints' not found. No history to delete for thread_id: {thread_id}")
-                return
+            # 'with' also handles cursor management and transactions
+            with conn.cursor() as cursor:
+                
+                # --- Delete from the 'checkpoint_writes' table first ---
+                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'checkpoint_writes');")
+                writes_table_exists = cursor.fetchone()[0]
+                
+                if writes_table_exists:
+                    cursor.execute("DELETE FROM checkpoint_writes WHERE thread_id = %s", (str(thread_id),))
 
-            # If the table exists, proceed with deleting the history for the given thread_id.
-            print(f"Found 'checkpoints' table. Deleting history for thread_id: {thread_id}")
-            # The thread_id is passed as a parameter to prevent SQL injection.
-            cursor.execute("DELETE FROM checkpoints WHERE thread_id = ?", (str(thread_id),))
-            conn.commit()
-            print("History deleted successfully.")
+                # --- Delete from the 'checkpoints' table ---
+                cursor.execute("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'checkpoints');")
+                checkpoints_table_exists = cursor.fetchone()[0]
 
-    except sqlite3.Error as e:
-        # Catch any other potential SQLite errors for robust error logging.
-        print(f"An error occurred while trying to delete conversation history: {e}")
+                if checkpoints_table_exists:
+                    cursor.execute("DELETE FROM checkpoints WHERE thread_id = %s", (str(thread_id),))
+
+                if writes_table_exists or checkpoints_table_exists:
+                    conn.commit()
+
+    except psycopg.Error as e:
+        raise RuntimeError(f"Failed to delete conversation {thread_id} due to a database error.") from e
+    except Exception as e:
+        raise RuntimeError(f"An unexpected error occurred while deleting conversation {thread_id}.") from e

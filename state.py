@@ -22,11 +22,18 @@ class Metadata(BaseModel):
 class QueryConstruct(BaseModel):
     """
     A Pydantic model to represent the structured output for query construction.
-    This is the output schema for the LLM that analyzes the user's intent.
+    This is the output schema for the LLM that analyzes the user's intent and conversation history.
     """
     filter: Metadata = Field(
         default_factory=Metadata,
-        description="A structured filter to be applied to the vector database query."
+        description="A structured filter to be applied to the vector database query based on the user's latest query."
+    )
+    refined_query: str = Field(
+        ...,
+        description=(
+            "A rewritten, self-contained query that incorporates context from the conversation. "
+            "This query is optimized for vector database retrieval."
+        )
     )
 
 # --- LangGraph State Definition ---
@@ -41,8 +48,8 @@ class FinancialAnalysisState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     
     # The result of the query construction node.
-    # It contains the query text and the metadata filter.
-    query_construction: QueryConstruct
+    # It contains the refined query and the metadata filter.
+    structured_query: QueryConstruct
     
     # The documents retrieved from the vector database.
     # This is the context used by the LLM to formulate the final answer.

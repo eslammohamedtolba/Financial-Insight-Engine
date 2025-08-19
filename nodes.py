@@ -1,25 +1,104 @@
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.documents import Document
 from config import cache_store, chroma_store, bm25_retriever, llm, reranker_model
 from state import QueryConstruct, FinancialAnalysisState, Metadata
 from langchain_core.prompts import ChatPromptTemplate
 
+# Query Construction Node
+def query_construct(state: FinancialAnalysisState):
+    """
+    Analyzes the user's message and conversation history to create a structured query.
+    It extracts metadata filters and refines the user's query into a standalone question
+    optimized for retrieval. This is the first step to understand user intent.
+    """
+    messages = state['messages']
+    query = messages[-1].content
+    
+    # Extract the last two messages (if they exist) to provide context.
+    if len(messages) > 1:
+        previous_messages = messages[:-1]
+        context_messages = previous_messages[-2:]
+        conversation_context = "\n".join(
+            [f"{'User' if isinstance(m, HumanMessage) else 'Assistant'}: {m.content}" for m in context_messages]
+        )
+    else:
+        # If this is the first message, there is no context.
+        conversation_context = "This is the first question from the user."
+    
+    # Create Prompt Template
+    prompt = ChatPromptTemplate.from_messages([
+        ("system",
+         "You are an expert at query analysis and refinement for a financial RAG system. "
+         "Your task is to analyze the user's latest query in the context of the recent conversation history. "
+         "You must produce two outputs in a structured format:\n"
+         "1. `filter`: Extract a metadata filter (company ticker and category) from the user's **latest query only**. "
+         "   - Company tickers: AAPL, MSFT, GOOG, AMZN, META. "
+         "   - Categories: 'risks', 'management_dis'. "
+         "   - If not mentioned, set the value to null.\n"
+         "2. `refined_query`: Rewrite the user's latest query into a clear, self-contained question. "
+         "   - Use the 'Conversation Context' to resolve pronouns (e.g., 'it', 'they') or follow-up questions (e.g., 'what about for them?'). "
+         "   - If the new query is on a completely different topic, ignore the context and create a standalone query. "
+         "   - The refined query should be optimized for a vector database search.\n\n"
+         "Examples:\n"
+         "--- (Example 1: Follow-up question) ---\n"
+         "Conversation Context:\nUser: What are the main risks for Apple?\nAssistant: [Provides answer about Apple's risks]\n"
+         "User Query: What about for Microsoft?\n"
+         "Your Output: {{'filter': {{'company': 'MSFT', 'category': 'risks'}}, 'refined_query': 'What are the main risks for Microsoft?'}}\n\n"
+         "--- (Example 2: Standalone question) ---\n"
+         "Conversation Context:\nUser: How was Amazon's revenue last year?\nAssistant: [Provides answer about AMZN revenue]\n"
+         "User Query: Tell me about Google's management discussion.\n"
+         "Your Output: {{'filter': {{'company': 'GOOG', 'category': 'management_dis'}}, 'refined_query': 'What is discussed in Google's management discussion and analysis section?'}}\n\n"
+         "--- (Example 3: First question) ---\n"
+         "Conversation Context:\nThis is the first question from the user.\n"
+         "User Query: meta risks\n"
+         "Your Output: {{'filter': {{'company': 'META', 'category': 'risks'}}, 'refined_query': 'What are the main business and operational risks for Meta?'}}"),
+        ("human", "Conversation Context:\n{conversation_context}\n\nUser Query: {query}")
+    ])
+    
+    try:
+        structured_llm = llm.with_structured_output(QueryConstruct)
+        
+        # Generate the structured filter and refined query
+        query_construct_output = structured_llm.invoke(
+            prompt.format_messages(conversation_context=conversation_context, query=query)
+        )
+        
+        if query_construct_output is None:
+            # If the LLM fails to produce structured output, create a fallback.
+            query_construct_output = QueryConstruct(
+                filter=Metadata(),
+                refined_query=query
+            )
+        
+        # Update the state with the constructed object
+        state['structured_query'] = query_construct_output
+        
+    except Exception as e:
+        # Create a fallback QueryConstruct if structured output fails
+        fallback_output = QueryConstruct(
+            filter=Metadata(),
+            refined_query=query
+        )
+        state['structured_query'] = fallback_output
+    
+    return state
+
 # Check Cache Node
 def check_cache(state: FinancialAnalysisState):
     """
-    Checks if the user's query is in the Redis cache.
+    Checks if the refined query is in the Redis cache. This now runs *after* query construction.
     """
-    # Get the last human message
-    query = state['messages'][-1].content
+    # Use the self-contained, refined query for the cache check.
+    refined_query = state['structured_query'].refined_query
     
     # Perform a similarity search on the cache with a threshold
-    # Note: `similarity_search_with_score` returns a list of tuples (document, score)
-    results = cache_store.similarity_search_with_score(query=query, k=1)
+    results = cache_store.similarity_search_with_score(query=refined_query, k=1)
     
-    if results and (1 - abs(results[0][1]) >= 0.85):  # Check for a cache hit with a 0.85 similarity threshold
+    if results and (1 - abs(results[0][1]) >= 0.90):  # Using a slightly higher threshold 0.9 for refined queries
         # Cache hit, retrieve the stored answer
         cached_answer = results[0][0].metadata.get("response")
         state['cache_hit'] = True
+        # Append the cached answer as a new AI message
         state['messages'].append(AIMessage(content=cached_answer))
     else:
         # No cache hit
@@ -27,61 +106,13 @@ def check_cache(state: FinancialAnalysisState):
     
     return state
 
-# Query Construction Node
-def query_construct(state: FinancialAnalysisState):
-    """
-    Uses an LLM to extract a search query and a metadata filter from the user's message.
-    """
-    query = state['messages'][-1].content
-    
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", 
-         "You are an expert at extracting a structured metadata filter from a user's question about financial filings. "
-         "Analyze the user's query and extract the company ticker and category if they are explicitly mentioned. "
-         "Company tickers: AAPL (Apple), MSFT (Microsoft), GOOG (Google), AMZN (Amazon), META (Meta/Facebook). "
-         "Categories: 'risks' for risk factors, 'management_dis' for management discussion and analysis. "
-         "If a company or category is not explicitly mentioned or cannot be determined, set it to null. "
-         "Examples:\n"
-         "- 'What are the risks for Apple?' -> company: 'AAPL', category: 'risks'\n"
-         "- 'Tell me about management discussion for Google' -> company: 'GOOG', category: 'management_dis'\n"
-         "- 'How has Amazon performed?' -> company: 'AMZN', category: null\n"
-         "- 'What are the risks of tech companies?' -> company: null, category: 'risks'\n"
-         "- 'Tell me about financial performance' -> company: null, category: null"),
-        ("human", "User query: {query}")
-    ])
-    
-    try:
-        structured_llm = llm.with_structured_output(QueryConstruct)
-        
-        # Generate the structured filter
-        query_construct_output = structured_llm.invoke(prompt.format_messages(query=query))
-        
-        # If the output is None or invalid, create a default QueryConstruct
-        if query_construct_output is None:
-            query_construct_output = QueryConstruct(filter=Metadata())
-        
-        # Update the state with the constructed filter
-        state['query_construction'] = query_construct_output
-        
-    except Exception as e:
-        # Create a fallback QueryConstruct if structured output fails
-        state['query_construction'] = QueryConstruct(filter=Metadata())
-    
-    return state
-
 # Retriever Node
 def retrieve(state: FinancialAnalysisState):
     """
-    Retrieves documents using a hybrid search approach, then reranks them for relevance.
-    1. Performs a filtered semantic search with ChromaDB.
-    2. Performs a keyword search with BM25.
-    3. Combines and de-duplicates the results.
-    4. Reranks the unique documents using a Cross-Encoder model.
-    5. Selects the top N documents to create a rich, focused context.
+    Retrieves documents using a hybrid search approach based on the refined query.
     """
-
-    query_text = state['messages'][-1].content
-    metadata_filter = state['query_construction'].filter.model_dump()
+    query_text = state['structured_query'].refined_query
+    metadata_filter = state['structured_query'].filter.model_dump()
     
     # Build the filter for ChromaDB
     cleaned_filter = {k: v for k, v in metadata_filter.items() if v is not None}
@@ -115,13 +146,8 @@ def retrieve(state: FinancialAnalysisState):
 
         # Reranking documents
         if unique_docs:
-            # Create pairs of [query, document_content] for the reranker model
             rerank_pairs = [[query_text, doc.page_content] for doc in unique_docs]
-            
-            # Get relevance scores from the model
             scores = reranker_model.predict(rerank_pairs)
-            
-            # Combine documents with their scores and sort
             scored_docs = list(zip(scores, unique_docs))
             scored_docs.sort(reverse=True)
 
@@ -141,12 +167,13 @@ def retrieve(state: FinancialAnalysisState):
 def generate_answer(state: FinancialAnalysisState):
     """
     Generates a final answer using the LLM and retrieved documents as context,
-    and stores the answer in the cache.
+    and stores the answer in the cache against the refined query.
     """
-    # Get the original human query
+    # Use the original human query for the final prompt context
     original_query = state['messages'][-1].content
+    # Use the refined query for caching
+    refined_query = state['structured_query'].refined_query
     
-    # Get the retrieved documents for context
     documents = state['source_documents']
     
     if documents:
@@ -171,22 +198,20 @@ def generate_answer(state: FinancialAnalysisState):
     
     try:
         chain = prompt | llm
+        # The LLM answers the original question, but using the context retrieved by the refined query
         answer_message = chain.invoke({"context": context, "question": original_query})
         
-        # Check if the response from the LLM is empty (due to safety filters, etc.)
         if not answer_message.content:
             fallback_response = AIMessage(content="I was unable to generate a response for this query, possibly due to a content filter. Please try rephrasing your question.")
             state['messages'].append(fallback_response)
         else:
-            # Update messages with the AI's response
             state['messages'].append(answer_message)
             
-            # Store the query and answer in the cache for future use
-            new_doc = Document(page_content=original_query, metadata={"response": answer_message.content})
+            # Store the refined query and its answer in the cache
+            new_doc = Document(page_content=refined_query, metadata={"response": answer_message.content})
             cache_store.add_documents([new_doc])
-        
+            
     except Exception as e:
-        # Create a fallback response
         fallback_response = AIMessage(content=f"I apologize, but I encountered an error while processing your query: '{original_query}'. Please try again.")
         state['messages'].append(fallback_response)
     

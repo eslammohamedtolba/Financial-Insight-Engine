@@ -1,4 +1,5 @@
 .env
 *.sqlite*
 Data/chroma_db
+Data/bm25_retriever.pkl
 __pycache__

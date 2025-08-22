@@ -1,222 +1,178 @@
-# 🤖 Financial Analyst Assistant
+# 🤖 Financial Insight Engine
 
-A sophisticated RAG (Retrieval-Augmented Generation) system that provides intelligent analysis of SEC 10-K filings for major tech companies using LangGraph, ChromaDB, and Gemini 2.5 Pro.
+A sophisticated RAG (Retrieval-Augmented Generation) system powered by a hybrid LLM architecture. This application features a locally-run, fine-tuned **Llama 3 8B** for expert financial answer generation and **Google's Gemini Pro** for advanced query analysis of SEC 10-K filings. 
 
-## 🎯 Overview
+This application provides intelligent analysis of the latest 10-K filings from five major technology companies (Apple, Microsoft, Google, Amazon, Meta). The system leverages a state-of-the-art hybrid LLM strategy, combining a specialized local model for nuanced answer generation with a powerful API model for complex reasoning. By using a fine-tuned model, the assistant delivers responses with a consistent, expert tone, running efficiently on local hardware.
 
-This application analyzes the latest 10-K filings from five major technology companies (Apple, Microsoft, Google, Amazon, Meta) and provides intelligent responses to financial queries. The system combines semantic search, keyword matching, intelligent caching, and conversation context to deliver accurate and relevant financial insights.
+## 🖥️ User Interface
+
+The Financial Analyst Assistant features a clean, intuitive Streamlit interface designed for seamless interaction with complex financial data:
+
+![Financial Analyst Assistant Interface](Financial%20Analyst%20Assistant%20App.png)
+
+The interface provides:
+- **Real-time Chat**: Conversational interface for natural language queries about financial data
+- **Context-Aware Responses**: The system maintains conversation history for follow-up questions
+- **Professional Formatting**: Clean, readable responses with proper financial terminology
+- **Responsive Design**: Optimized for both desktop and mobile viewing
+- **Session Management**: Persistent conversation history throughout your analysis session
 
 ## ✨ Key Features
 
-- **Multi-Company Analysis**: Supports AAPL, MSFT, GOOG, AMZN, META
-- **Hybrid Retrieval System**: Combines ChromaDB vector search with BM25 keyword search
-- **Intelligent Query Construction**: Refines user queries using conversation context
-- **Smart Caching**: Redis-based caching system with semantic similarity matching
-- **Reranking Pipeline**: Uses CrossEncoder for improved result relevance
-- **Conversation Memory**: PostgreSQL-backed conversation history
-- **Dual-Section Coverage**: Risk Factors (1A) and Management Discussion (7)
-- **Interactive UI**: Clean Streamlit interface with real-time responses
+-   **Hybrid LLM Architecture**: Leverages the strengths of a specialized local model (Llama 3) for generation and a powerful API model (Gemini) for query analysis.
+-   **Fine-Tuned for Finance**: Utilizes a `Meta-Llama-3-8B-Instruct` model fine-tuned on financial Q&A, providing expert, context-aware responses.
+-   **High-Performance Local Inference**: Optimized with **Unsloth** for 2x faster, low-memory 4-bit inference on consumer GPUs.
+-   **Hybrid Retrieval System**: Combines ChromaDB vector search with BM25 keyword search for robust document retrieval.
+-   **Intelligent Query Construction**: Refines user queries using conversation context.
+-   **Smart Caching**: Redis-based semantic similarity caching to reduce latency and redundant processing.
+-   **Conversation Memory**: Persists conversation history using a PostgreSQL checkpointer.
+-   **Interactive UI**: Built with Streamlit for a clean, real-time user experience.
 
 ## 🏗️ Architecture
 
+### The Hybrid LLM Strategy
+
+This project employs two different LLMs, each assigned to the task it performs best:
+
+1.  **Google Gemini Pro (Query Analysis)**: Used for its superior reasoning and structured output capabilities. It deconstructs user intent, handles conversation history to resolve follow-up questions, and extracts metadata filters for the retrieval system.
+2.  **Fine-Tuned Llama 3 (Answer Generation)**: Used for the final, context-grounded response. As a specialized model, it delivers answers in the precise tone and format it was trained on, running efficiently and privately on local hardware.
+
 ### Graph Architecture
+
 ![Financial Analyst Assistant Graph](Financial%20Analyst%20Assistant%20Graph.png)
 
 The system follows a sophisticated LangGraph workflow:
-
-1. **Query Construction**: Analyzes user intent and conversation history to create refined, standalone queries
-2. **Cache Check**: Searches Redis cache for similar previous queries (90% similarity threshold)
-3. **Hybrid Retrieval**: If cache miss, performs semantic + keyword search with metadata filtering
-4. **Reranking**: Uses CrossEncoder to rank and select top 2 most relevant documents
-5. **Answer Generation**: LLM generates response and stores in cache for future use
-
-### Application UI
-![Financial Analyst Assistant App](Financial%20Analyst%20Assistant%20App.png)
-
-Clean, intuitive interface with:
-- Real-time chat interaction
-- Conversation history persistence
-- Clear conversation controls
-- Loading indicators for processing states
+1.  **Query Construction**: Gemini analyzes user intent and conversation history.
+2.  **Cache Check**: Searches Redis cache for similar previous queries.
+3.  **Hybrid Retrieval**: If cache miss, performs semantic + keyword search.
+4.  **Reranking**: A CrossEncoder model ranks and selects the top 2 most relevant documents.
+5.  **Answer Generation**: The fine-tuned Llama 3 model generates the final response, which is then stored in the cache.
 
 ## 🛠️ Technical Stack
 
-- **LLM**: Google Gemini 2.5 Pro with relaxed safety settings
-- **Embeddings**: BAAI/bge-small-en-v1.5 (FastEmbed)
-- **Vector Database**: ChromaDB for semantic search
-- **Keyword Search**: BM25Retriever for lexical matching
-- **Caching**: Redis Vector Store with TTL
-- **Reranking**: CrossEncoder (ms-marco-MiniLM-L-6-v2)
-- **Orchestration**: LangGraph for workflow management
-- **Persistence**: PostgreSQL for conversation checkpoints
-- **Frontend**: Streamlit for interactive UI
-- **Data Source**: SEC API for 10-K filings
+-   **Answer Generation LLM**: Fine-tuned `Meta-Llama-3-8B-Instruct`
+-   **Query Analysis LLM**: Google Gemini 1.5 Pro
+-   **Fine-Tuning & Inference Engine**: Unsloth
+-   **ML Framework**: PyTorch
+-   **Embeddings**: `BAAI/bge-small-en-v1.5` (FastEmbed)
+-   **Vector Database**: ChromaDB
+-   **Keyword Search**: `rank_bm25`
+-   **Caching**: Redis Vector Store
+-   **Reranking**: `cross-encoder/ms-marco-MiniLM-L-6-v2`
+-   **Orchestration**: LangGraph
+-   **Persistence**: PostgreSQL
+-   **Frontend**: Streamlit
 
 ## 📋 Prerequisites
 
-- Python 3.8+
-- Docker (for Redis)
-- PostgreSQL database
-- Google Gemini API key
-- SEC API key
+-   **Hardware**: An **NVIDIA GPU** with CUDA 12.1+ support.
+    -   **Minimum 8GB VRAM** is required to run the application.
+    -   12GB+ VRAM is recommended for a smoother experience.
+-   **Python**: Python 3.11 (64-bit).
+-   **Docker**: For running the PostgreSQL and Redis databases.
+-   **API Keys**: A Google Gemini API key.
 
-## 🚀 Installation
+## 🚀 Installation & Setup
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/eslammohamedtolba/Financial-Analyst-Assistant.git
-cd Financial-Analyst-Assistant
-```
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/eslammohamedtolba/Financial-Insight-Engine.git
+    cd Financial-Insight-Engine
+    ```
 
-2. **Create and activate virtual environment**
-```bash
-# Create the environment
-python -m venv venv
+2.  **Create and activate virtual environment**
+    ```bash
+    # Create the environment
+    python -m venv venv
 
-# Activate on Windows
-venv\Scripts\activate
+    # Activate on Windows
+    .\venv\Scripts\activate
 
-# Activate on macOS/Linux
-source venv/bin/activate
-```
+    # Activate on macOS/Linux
+    source venv/bin/activate
+    ```
 
-3. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
+3.  **Install Dependencies**
+    The `requirements.txt` file is configured to install all packages, including the correct CUDA version of PyTorch, in a single step.
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-4. **Set up environment variables**
-Create a `.env` file with:
-```env
-# Google Gemini API
-GOOGLE_API_KEY=your_gemini_api_key
+4.  **Set up environment variables**
+    Create a `.env` file in the root directory and add your credentials:
+    ```env
+    # Google Gemini API
+    GOOGLE_API_KEY="your_gemini_api_key"
 
-# SEC API
-SEC_API_KEY=your_sec_api_key
+    # Database Configuration
+    DB_USER="myuser"
+    DB_PASSWORD="mypassword"
+    DB_HOST="localhost"
+    DB_PORT="5432"
+    DB_NAME="graph_memory"
+    ```
 
-# Database Configuration
-DB_USER=myuser
-DB_PASSWORD=mypassword
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=graph_memory
-```
+5.  **Start Docker containers**
+    Run the following commands to start the PostgreSQL and Redis services.
 
-5. **Start Docker containers**
+    **PostgreSQL:**
+    ```bash
+    docker run --name my-postgres -d -p 5432:5432 -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=mypassword -e POSTGRES_DB=graph_memory -v postgres_data:/var/lib/postgresql/data postgres:16
+    ```
+    **Redis:**
+    ```bash
+    docker run --name my-redis -d -p 6379:6379 -v redis-data:/data redis/redis-stack:latest
+    ```
 
-**PostgreSQL container:**
-```bash
-docker run \
-  --name my-postgres \
-  -d \
-  -p 5432:5432 \
-  -e POSTGRES_USER=myuser \
-  -e POSTGRES_PASSWORD=mypassword \
-  -e POSTGRES_DB=graph_memory \
-  -v postgres_data:/var/lib/postgresql/data \
-  postgres:16
-```
+6.  **Prepare Data and Fine-Tune Model (CRITICAL STEP)**
+    You must run the provided Jupyter Notebooks in order. This will download the financial data, create the necessary database indexes, and fine-tune the Llama 3 model.
 
-**Redis container:**
-```bash
-docker run \
-  --name my-redis \
-  -p 6379:6379 \
-  -v redis-data:/data \
-  -d \
-  redis/redis-stack:latest
-```
+    - **Prepare Data:**
+    Open and run all cells in `Data/"Financial Data Analysis Preparation.ipynb"`. This will create the ChromaDB vector store and the BM25 retriever file.
 
-6. **Process financial data**
-Run the Jupyter notebook to download and process SEC filings:
-```bash
-jupyter notebook "Financial Data Analysis Preparation.ipynb"
-```
+    - **Fine-Tune the Model:**
+    Open and run all cells in `Data/"Finetune_Llama3_Financial_Analysis.ipynb"`. This will create the `Data/complete_finetuned_model` directory, which is required by the application.
 
-7. **Launch the application**
-```bash
-streamlit run main.py
-```
+7.  **Launch the application**
+    Ensure all setup steps are complete and your Docker containers are running.
+    ```bash
+    streamlit run main.py
+    ```
 
 ## 📁 Project Structure
 
 ```
-financial-analyst-assistant/
-├── main.py                 # Streamlit application entry point
-├── graph.py               # LangGraph workflow definition
-├── nodes.py              # Individual processing nodes
-├── state.py              # State management and Pydantic models
-├── config.py             # Configuration and model initialization
-├── db_utils.py           # Database utility functions
-├── requirements.txt      # Python dependencies
-├── .env                 # Environment variables
 ├── Data/
-│   ├── chroma_db/       # ChromaDB vector store
-│   ├── bm25_retriever.pkl # Serialized BM25 retriever
-│   └── Financial Data Analysis Preparation.ipynb
-├── Financial Analyst Assistant App.png
-├── Financial Analyst Assistant Graph.png
-└── README.md
+│   ├── chroma_db/                                  # (Generated) ChromaDB vector store
+│   ├── complete_finetuned_model/                   # (Generated) Fine-tuned Llama 3 model
+│   ├── bm25_retriever.pkl                          # (Generated) Serialized BM25 retriever
+│   ├── Financial Data Analysis Preparation.ipynb   # Notebook to create and save the vector & keyword databases
+│   └── Finetune_Llama3_Financial_Analysis.ipynb    # Notebook to fine-tune and save the Llama 3 model
+├── .env                                            # Local environment variables
+├── .gitignore                                      # Git ignore file
+├── config.py                                       # Configuration and model initialization
+├── db_utils.py                                     # Database utility functions
+├── graph.py                                        # LangGraph workflow definition
+├── main.py                                         # Streamlit application entry point
+├── nodes.py                                        # Individual processing nodes
+├── README.md                                       # Project README file
+├── requirements.txt                                # Python dependencies
+├── state.py                                        # State management and Pydantic models
+├── Financial Analyst Assistant App.png             # UI Screenshot
+└── Financial Analyst Assistant Graph.png           # Graph Screenshot
+
 ```
-
-## 🔧 Core Components
-
-### Query Construction
-- Analyzes conversation context to resolve pronouns and follow-up questions
-- Extracts metadata filters (company ticker, document category)
-- Creates standalone, retrieval-optimized queries
-
-### Hybrid Retrieval System
-- **Semantic Search**: ChromaDB with metadata filtering
-- **Keyword Search**: BM25 for exact term matching
-- **Deduplication**: Removes duplicate results across retrievers
-- **Reranking**: CrossEncoder scores and selects top documents
-
-### Intelligent Caching
-- Redis-based semantic similarity caching
-- 90% similarity threshold for cache hits
-- 24-hour TTL for cached responses
-- Reduces API calls and improves response times
-
-### Conversation Management
-- PostgreSQL checkpointer for conversation persistence
-- Thread-based session management
-- Conversation history display and clearing functionality
-
-## 📊 Supported Companies
-
-| Ticker | Company Name |
-|--------|-------------|
-| AAPL | Apple Inc. |
-| MSFT | Microsoft Corporation |
-| GOOG | Alphabet Inc. (Google) |
-| AMZN | Amazon.com, Inc. |
-| META | Meta Platforms, Inc. |
-
-## 🎯 Document Categories
-
-- **risks**: Risk Factors (Section 1A of 10-K filings)
-- **management_dis**: Management's Discussion and Analysis (Section 7 of 10-K filings)
-
-## 💡 Usage Examples
-
-- "What are the main risks for Apple?"
-- "Tell me about Microsoft's revenue trends"
-- "How does Google's management view their competitive position?"
-- "What challenges does Amazon face in their cloud business?"
-- "Compare the risk factors between Meta and Apple"
 
 ## 🔒 Safety & Compliance
 
-- Relaxed safety settings on Gemini for financial document analysis
-- Proper error handling and fallback mechanisms
-- Respect for API rate limits and usage guidelines
-- Secure environment variable management
+-   Relaxed safety settings on Gemini for financial document analysis.
+-   Proper error handling and fallback mechanisms.
+-   Secure environment variable management using `.env` files.
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+1.  Fork the repository
+2.  Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request

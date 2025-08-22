@@ -1,20 +1,40 @@
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.documents import Document
-from config import cache_store, chroma_store, bm25_retriever, llm, reranker_model
 from state import QueryConstruct, FinancialAnalysisState, Metadata
 from langchain_core.prompts import ChatPromptTemplate
 
-# Query Construction Node
+# Import all initialization functions
+from config import (
+    get_gemini_llm,
+    get_redis_cache,
+    get_chroma_store,
+    get_bm25_retriever,
+    get_reranker_model,
+    load_llama3_model,
+    llama3_inference
+)
+
+# Initialize all components once when the application starts
+gemini_llm = get_gemini_llm()
+redis_cache = get_redis_cache()
+chroma_vector_store = get_chroma_store()
+bm25 = get_bm25_retriever()
+reranker = get_reranker_model()
+
+# Load our powerful, fine-tuned local model ONCE. This will take a moment.
+llama3_model, llama3_tokenizer = load_llama3_model()
+
+# --- Node Definitions ---
+
 def query_construct(state: FinancialAnalysisState):
     """
-    Analyzes the user's message and conversation history to create a structured query.
-    It extracts metadata filters and refines the user's query into a standalone question
-    optimized for retrieval. This is the first step to understand user intent.
+    Analyzes the user's message using Gemini to create a structured query.
+    Gemini is used here for its powerful reasoning and structured output capabilities.
     """
     messages = state['messages']
     query = messages[-1].content
     
-    # Extract the last two messages (if they exist) to provide context.
+    # Context extraction logic remains the same
     if len(messages) > 1:
         previous_messages = messages[:-1]
         context_messages = previous_messages[-2:]
@@ -22,7 +42,6 @@ def query_construct(state: FinancialAnalysisState):
             [f"{'User' if isinstance(m, HumanMessage) else 'Assistant'}: {m.content}" for m in context_messages]
         )
     else:
-        # If this is the first message, there is no context.
         conversation_context = "This is the first question from the user."
     
     # Create Prompt Template
@@ -56,104 +75,68 @@ def query_construct(state: FinancialAnalysisState):
     ])
     
     try:
-        structured_llm = llm.with_structured_output(QueryConstruct)
+        # We use the Gemini LLM specifically for this structured output task
+        structured_llm = gemini_llm.with_structured_output(QueryConstruct)
         
-        # Generate the structured filter and refined query
         query_construct_output = structured_llm.invoke(
             prompt.format_messages(conversation_context=conversation_context, query=query)
         )
         
-        if query_construct_output is None:
-            # If the LLM fails to produce structured output, create a fallback.
-            query_construct_output = QueryConstruct(
-                filter=Metadata(),
-                refined_query=query
-            )
-        
-        # Update the state with the constructed object
-        state['structured_query'] = query_construct_output
+        state['structured_query'] = query_construct_output or QueryConstruct(filter=Metadata(), refined_query=query)
         
     except Exception as e:
-        # Create a fallback QueryConstruct if structured output fails
-        fallback_output = QueryConstruct(
-            filter=Metadata(),
-            refined_query=query
-        )
-        state['structured_query'] = fallback_output
+        state['structured_query'] = QueryConstruct(filter=Metadata(), refined_query=query)
     
     return state
 
-# Check Cache Node
+
 def check_cache(state: FinancialAnalysisState):
-    """
-    Checks if the refined query is in the Redis cache. This now runs *after* query construction.
-    """
-    # Use the self-contained, refined query for the cache check.
+    """Checks the Redis cache using the refined query."""
     refined_query = state['structured_query'].refined_query
     
-    # Perform a similarity search on the cache with a threshold
-    results = cache_store.similarity_search_with_score(query=refined_query, k=1)
+    # Use the initialized redis_cache component
+    results = redis_cache.similarity_search_with_score(query=refined_query, k=1)
     
-    if results and (1 - abs(results[0][1]) >= 0.90):  # Using a slightly higher threshold 0.9 for refined queries
-        # Cache hit, retrieve the stored answer
+    if results and (1 - abs(results[0][1]) >= 0.90):
         cached_answer = results[0][0].metadata.get("response")
         state['cache_hit'] = True
-        # Append the cached answer as a new AI message
         state['messages'].append(AIMessage(content=cached_answer))
     else:
-        # No cache hit
         state['cache_hit'] = False
     
     return state
 
-# Retriever Node
+
 def retrieve(state: FinancialAnalysisState):
-    """
-    Retrieves documents using a hybrid search approach based on the refined query.
-    """
+    """Retrieves documents using a hybrid search approach."""
     query_text = state['structured_query'].refined_query
     metadata_filter = state['structured_query'].filter.model_dump()
     
-    # Build the filter for ChromaDB
+    # Filter building logic remains the same
     cleaned_filter = {k: v for k, v in metadata_filter.items() if v is not None}
+    where_clause = None
     if len(cleaned_filter) > 1:
         where_clause = {"$and": [{key: {"$eq": value}} for key, value in cleaned_filter.items()]}
-    elif len(cleaned_filter) == 1:
+    elif cleaned_filter:
         key, value = next(iter(cleaned_filter.items()))
         where_clause = {key: {"$eq": value}}
-    else:
-        where_clause = None
 
     try:
-        # Get documents from semantic search (ChromaDB)
-        semantic_docs = chroma_store.similarity_search(
-            query=query_text,
-            filter=where_clause,
-            k=3
-        )
+        # Use the initialized retriever components
+        semantic_docs = chroma_vector_store.similarity_search(query=query_text, filter=where_clause, k=3)
+        keyword_docs = bm25.invoke(query_text)
 
-        # Get documents from keyword search (BM25)
-        keyword_docs = bm25_retriever.invoke(query_text)
-
-        # Combine and de-duplicate the results
+        # Reranking logic remains the same
         combined_docs = semantic_docs + keyword_docs
         seen_contents = set()
-        unique_docs = []
-        for doc in combined_docs:
-            if doc.page_content not in seen_contents:
-                unique_docs.append(doc)
-                seen_contents.add(doc.page_content)
+        unique_docs = [doc for doc in combined_docs if doc.page_content not in seen_contents and not seen_contents.add(doc.page_content)]
 
-        # Reranking documents
         if unique_docs:
             rerank_pairs = [[query_text, doc.page_content] for doc in unique_docs]
-            scores = reranker_model.predict(rerank_pairs)
-            scored_docs = list(zip(scores, unique_docs))
-            scored_docs.sort(reverse=True)
-
-            # Select the top 2 documents for the final context
-            top_n = 2
-            reranked_final_docs = [doc for score, doc in scored_docs[:top_n]]
+            scores = reranker.predict(rerank_pairs)
+            scored_docs = sorted(zip(scores, unique_docs), reverse=True)
+            
+            reranked_final_docs = [doc for score, doc in scored_docs[:2]]
             state['source_documents'] = [doc.page_content for doc in reranked_final_docs]
         else:
             state['source_documents'] = []
@@ -163,56 +146,40 @@ def retrieve(state: FinancialAnalysisState):
     
     return state
 
-# Answer Question Node
+
 def generate_answer(state: FinancialAnalysisState):
     """
-    Generates a final answer using the LLM and retrieved documents as context,
-    and stores the answer in the cache against the refined query.
+    Generates a final answer using the fine-tuned Llama 3 model and retrieved documents.
     """
-    # Use the original human query for the final prompt context
     original_query = state['messages'][-1].content
-    # Use the refined query for caching
     refined_query = state['structured_query'].refined_query
-    
     documents = state['source_documents']
     
-    if documents:
-        context = "\n\n".join(documents)
-    else:
-        context = "No relevant documents were found."
-    
-    prompt = ChatPromptTemplate.from_messages([
-        ("system",
-         "You are an expert Financial Analyst Assistant. Your purpose is to answer user questions about the financial performance and risks of major tech companies, using excerpts from their latest 10-K filings."
-         "\n\n"
-         "Follow these instructions carefully:\n"
-         "1. Analyze the provided 'Context' section, which contains relevant text from the filings.\n"
-         "2. Synthesize the information to form a concise, accurate, and insightful answer.\n"
-         "3. Adopt a professional and direct tone. Answer the question as if you have the knowledge yourself.\n"
-         "4. **Crucially, DO NOT** start your response with phrases like 'Based on the documents provided,' or 'According to the context.' The user already knows the information comes from these documents.\n"
-         "5. If the context does not contain the information needed to answer the question, state that you cannot find the relevant details in the available filings.\n"
-         "\n\n"
-         "Context:\n{context}"),
-        ("human", "{question}")
-    ])
+    context = "\n\n".join(documents) if documents else "No relevant documents were found."
     
     try:
-        chain = prompt | llm
-        # The LLM answers the original question, but using the context retrieved by the refined query
-        answer_message = chain.invoke({"context": context, "question": original_query})
+        # --- KEY CHANGE: Call our local Llama 3 model ---
+        # Instead of using a LangChain chain with Gemini, we call our optimized inference function.
+        answer_text = llama3_inference(
+            question=original_query,
+            context=context,
+            model=llama3_model,
+            tokenizer=llama3_tokenizer
+        )
         
-        if not answer_message.content:
-            fallback_response = AIMessage(content="I was unable to generate a response for this query, possibly due to a content filter. Please try rephrasing your question.")
-            state['messages'].append(fallback_response)
+        if not answer_text:
+            answer_message = AIMessage(content="I was unable to generate a response for this query. Please try rephrasing your question.")
         else:
-            state['messages'].append(answer_message)
+            answer_message = AIMessage(content=answer_text)
             
-            # Store the refined query and its answer in the cache
+            # Store the result in the cache
             new_doc = Document(page_content=refined_query, metadata={"response": answer_message.content})
-            cache_store.add_documents([new_doc])
+            redis_cache.add_documents([new_doc])
+
+        state['messages'].append(answer_message)
             
     except Exception as e:
-        fallback_response = AIMessage(content=f"I apologize, but I encountered an error while processing your query: '{original_query}'. Please try again.")
+        fallback_response = AIMessage(content=f"I apologize, but I encountered an error while processing your query. Please try again.")
         state['messages'].append(fallback_response)
     
     return state

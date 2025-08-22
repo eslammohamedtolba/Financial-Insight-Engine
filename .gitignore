@@ -1,5 +1,10 @@
-.env
 *.sqlite*
-Data/chroma_db
+Data/chroma_db*
 Data/bm25_retriever.pkl
-__pycache__
+Data/complete_finetuned_model/
+unsloth_compiled_cache
+.env
+venv/
+__pycache__/
+.vscode/
+*.pyc

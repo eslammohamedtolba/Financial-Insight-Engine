@@ -2,6 +2,7 @@
 Data/chroma_db*
 Data/bm25_retriever.pkl
 Data/complete_finetuned_model/
+Data/phi3_finetuned_model/
 unsloth_compiled_cache
 .env
 venv/

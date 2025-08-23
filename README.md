@@ -1,26 +1,25 @@
 # 🤖 Financial Insight Engine
 
-A sophisticated RAG (Retrieval-Augmented Generation) system powered by a hybrid LLM architecture. This application features a locally-run, fine-tuned **Llama 3 8B** for expert financial answer generation and **Google's Gemini Pro** for advanced query analysis of SEC 10-K filings. 
+A sophisticated RAG (Retrieval-Augmented Generation) system powered by a hybrid LLM architecture. This application features a locally-run, fine-tuned **Phi-3 3.8B** for expert financial answer generation and **Google's Gemini Pro** for advanced query analysis of SEC 10-K filings.
 
 This application provides intelligent analysis of the latest 10-K filings from five major technology companies (Apple, Microsoft, Google, Amazon, Meta). The system leverages a state-of-the-art hybrid LLM strategy, combining a specialized local model for nuanced answer generation with a powerful API model for complex reasoning. By using a fine-tuned model, the assistant delivers responses with a consistent, expert tone, running efficiently on local hardware.
 
 ## 🖥️ User Interface
 
-The Financial Analyst Assistant features a clean, intuitive Streamlit interface designed for seamless interaction with complex financial data:
+The Financial Insight Engine features a clean, intuitive Streamlit interface designed for seamless interaction with complex financial data:
 
 ![Financial Analyst Assistant Interface](Financial%20Analyst%20Assistant%20App.png)
 
 The interface provides:
-- **Real-time Chat**: Conversational interface for natural language queries about financial data
-- **Context-Aware Responses**: The system maintains conversation history for follow-up questions
-- **Professional Formatting**: Clean, readable responses with proper financial terminology
-- **Responsive Design**: Optimized for both desktop and mobile viewing
-- **Session Management**: Persistent conversation history throughout your analysis session
+- **Real-time Chat**: Conversational interface for natural language queries about financial data.
+- **Context-Aware Responses**: The system maintains conversation history for follow-up questions.
+- **Professional Formatting**: Clean, readable responses with proper financial terminology.
+- **Session Management**: Persistent conversation history throughout your analysis session.
 
 ## ✨ Key Features
 
--   **Hybrid LLM Architecture**: Leverages the strengths of a specialized local model (Llama 3) for generation and a powerful API model (Gemini) for query analysis.
--   **Fine-Tuned for Finance**: Utilizes a `Meta-Llama-3-8B-Instruct` model fine-tuned on financial Q&A, providing expert, context-aware responses.
+-   **Hybrid LLM Architecture**: Leverages the strengths of a specialized local model (Phi-3) for generation and a powerful API model (Gemini) for query analysis.
+-   **Fine-Tuned for Finance**: Utilizes a `microsoft/Phi-3-mini-4k-instruct` model fine-tuned on financial Q&A, providing expert, context-aware responses.
 -   **High-Performance Local Inference**: Optimized with **Unsloth** for 2x faster, low-memory 4-bit inference on consumer GPUs.
 -   **Hybrid Retrieval System**: Combines ChromaDB vector search with BM25 keyword search for robust document retrieval.
 -   **Intelligent Query Construction**: Refines user queries using conversation context.
@@ -35,7 +34,7 @@ The interface provides:
 This project employs two different LLMs, each assigned to the task it performs best:
 
 1.  **Google Gemini Pro (Query Analysis)**: Used for its superior reasoning and structured output capabilities. It deconstructs user intent, handles conversation history to resolve follow-up questions, and extracts metadata filters for the retrieval system.
-2.  **Fine-Tuned Llama 3 (Answer Generation)**: Used for the final, context-grounded response. As a specialized model, it delivers answers in the precise tone and format it was trained on, running efficiently and privately on local hardware.
+2.  **Fine-Tuned Phi-3 (Answer Generation)**: Used for the final, context-grounded response. As a specialized model, it delivers answers in the precise tone and format it was trained on, running efficiently and privately on local hardware.
 
 ### Graph Architecture
 
@@ -46,11 +45,11 @@ The system follows a sophisticated LangGraph workflow:
 2.  **Cache Check**: Searches Redis cache for similar previous queries.
 3.  **Hybrid Retrieval**: If cache miss, performs semantic + keyword search.
 4.  **Reranking**: A CrossEncoder model ranks and selects the top 2 most relevant documents.
-5.  **Answer Generation**: The fine-tuned Llama 3 model generates the final response, which is then stored in the cache.
+5.  **Answer Generation**: The fine-tuned Phi-3 model generates the final response, which is then stored in the cache.
 
 ## 🛠️ Technical Stack
 
--   **Answer Generation LLM**: Fine-tuned `Meta-Llama-3-8B-Instruct`
+-   **Answer Generation LLM**: Fine-tuned `microsoft/Phi-3-mini-4k-instruct`
 -   **Query Analysis LLM**: Google Gemini 1.5 Pro
 -   **Fine-Tuning & Inference Engine**: Unsloth
 -   **ML Framework**: PyTorch
@@ -66,8 +65,8 @@ The system follows a sophisticated LangGraph workflow:
 ## 📋 Prerequisites
 
 -   **Hardware**: An **NVIDIA GPU** with CUDA 12.1+ support.
-    -   **Minimum 8GB VRAM** is required to run the application.
-    -   12GB+ VRAM is recommended for a smoother experience.
+    -   **Minimum 6GB VRAM** is required to run the application.
+    -   8GB+ VRAM is recommended for a smoother experience.
 -   **Python**: Python 3.11 (64-bit).
 -   **Docker**: For running the PostgreSQL and Redis databases.
 -   **API Keys**: A Google Gemini API key.
@@ -125,13 +124,13 @@ The system follows a sophisticated LangGraph workflow:
     ```
 
 6.  **Prepare Data and Fine-Tune Model (CRITICAL STEP)**
-    You must run the provided Jupyter Notebooks in order. This will download the financial data, create the necessary database indexes, and fine-tune the Llama 3 model.
+    You must run the provided Jupyter Notebooks in order. This process downloads financial data, builds the retrieval databases, and creates the local language model.
 
-    - **Prepare Data:**
-    Open and run all cells in `Data/"Financial Data Analysis Preparation.ipynb"`. This will create the ChromaDB vector store and the BM25 retriever file.
+    - **Prepare Retrieval Databases:**
+       Open and run all cells in `Data/Financial Data Analysis Preparation.ipynb`. This will create the ChromaDB vector store and the BM25 retriever file.
 
-    - **Fine-Tune the Model:**
-    Open and run all cells in `Data/"Finetune_Llama3_Financial_Analysis.ipynb"`. This will create the `Data/complete_finetuned_model` directory, which is required by the application.
+    - **Fine-Tune the Language Model:**
+       Open and run all cells in `Data/Fine-Tuning_Phi-3_for_Financial_QA_with_Unsloth.ipynb`. This will create the `Data/phi3_finetuned_model` directory, which is required by the application.
 
 7.  **Launch the application**
     Ensure all setup steps are complete and your Docker containers are running.
@@ -140,28 +139,27 @@ The system follows a sophisticated LangGraph workflow:
     ```
 
 ## 📁 Project Structure
-
-```
+````
 ├── Data/
-│   ├── chroma_db/                                  # (Generated) ChromaDB vector store
-│   ├── complete_finetuned_model/                   # (Generated) Fine-tuned Llama 3 model
-│   ├── bm25_retriever.pkl                          # (Generated) Serialized BM25 retriever
-│   ├── Financial Data Analysis Preparation.ipynb   # Notebook to create and save the vector & keyword databases
-│   └── Finetune_Llama3_Financial_Analysis.ipynb    # Notebook to fine-tune and save the Llama 3 model
-├── .env                                            # Local environment variables
-├── .gitignore                                      # Git ignore file
-├── config.py                                       # Configuration and model initialization
-├── db_utils.py                                     # Database utility functions
-├── graph.py                                        # LangGraph workflow definition
-├── main.py                                         # Streamlit application entry point
-├── nodes.py                                        # Individual processing nodes
-├── README.md                                       # Project README file
-├── requirements.txt                                # Python dependencies
-├── state.py                                        # State management and Pydantic models
-├── Financial Analyst Assistant App.png             # UI Screenshot
-└── Financial Analyst Assistant Graph.png           # Graph Screenshot
+│   ├── chroma_db/                  # (Generated) ChromaDB vector store for semantic search
+│   ├── phi3_finetuned_model/       # (Generated) Fine-tuned Phi-3 model weights
+│   ├── bm25_retriever.pkl          # (Generated) BM25 retriever for keyword search
+│   ├── Financial Data Analysis Preparation.ipynb              # Notebook to create the vector & keyword databases
+│   └── Fine-Tuning_Phi-3_for_Financial_QA_with_Unsloth.ipynb  # Notebook to fine-tune and save the Phi-3 model
+├── .env                         # Local environment variables
+├── .gitignore                   # Git ignore file
+├── config.py                    # Configuration and model initialization
+├── db_utils.py                  # Database utility functions
+├── graph.py                     # LangGraph workflow definition
+├── main.py                      # Streamlit application entry point
+├── nodes.py                     # Individual processing nodes
+├── README.md                    # Project README file
+├── requirements.txt             # Python dependencies
+├── state.py                     # State management and Pydantic models
+├── Financial Analyst Assistant App.png     # UI Screenshot
+└── Financial Analyst Assistant Graph.png   # Graph Screenshot
 
-```
+````
 
 ## 🔒 Safety & Compliance
 

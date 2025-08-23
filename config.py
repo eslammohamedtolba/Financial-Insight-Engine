@@ -1,26 +1,26 @@
+from unsloth import FastLanguageModel
 from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
 from langchain_redis import RedisVectorStore, RedisConfig
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from sentence_transformers import CrossEncoder
-from unsloth import FastLanguageModel
-import torch
-from dotenv import load_dotenv
 import pickle
+from dotenv import load_dotenv
+import torch
 
 load_dotenv()
 
-# --- Local Fine-Tuned LLM (Llama 3) ---
+# --- Local Fine-Tuned LLM (Phi-3) ---
 
-# This function loads the heavy model and should be cached in the main app
-def load_llama3_model():
+def load_phi3_model():
     """
-    Loads the fine-tuned Llama 3 model and tokenizer from the local disk using Unsloth.
+    Loads the fine-tuned Phi-3 model and tokenizer from the local disk using Unsloth.
+    This is a heavy operation and should only be run once.
     """
-    MODEL_PATH = "Data/complete_finetuned_model"
+    MODEL_PATH = "Data/phi3_finetuned_model"
     
     if not torch.cuda.is_available():
-        raise SystemError("CUDA is not available. Cannot load the local Llama 3 model.")
+        raise SystemError("CUDA is not available. Cannot load the local Phi-3 model.")
 
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=MODEL_PATH,
@@ -32,30 +32,25 @@ def load_llama3_model():
     model.eval()
     return model, tokenizer
 
-def llama3_inference(question: str, context: str, model, tokenizer, max_new_tokens: int = 512):
+def phi3_inference(question: str, context: str, model, tokenizer, max_new_tokens: int = 512):
     """
-    Runs inference using the fine-tuned Llama 3 model with the specific prompt template it was trained on.
-    This function will be imported and used in the 'generate_answer' node.
+    Runs inference using the fine-tuned Phi-3 model by applying its native chat template.
     """
-    # The prompt template must exactly match the one used during fine-tuning
-    ft_prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-Below is a user question, paired with retrieved context. Write a response that appropriately answers the question,
-include specific details in your response. <|eot_id|>
+    # Create the message structure that the model was fine-tuned on.
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an expert financial analyst. Answer the user's question based only on the provided context."
+        },
+        {
+            "role": "user",
+            "content": f"Context: {context}\n\nQuestion: {question}"
+        },
+    ]
 
-<|start_header_id|>user<|end_header_id|>
-
-### Question:
-{}
-
-### Context:
-{}
-
-<|eot_id|>
-
-### Response: <|start_header_id|>assistant<|end_header_id|>
-{}"""
-
-    prompt = ft_prompt.format(question, context, "")
+    # Use the tokenizer's built-in chat template for the correct, native prompt format.
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    
     inputs = tokenizer([prompt], return_tensors="pt").to("cuda")
 
     outputs = model.generate(
@@ -71,10 +66,11 @@ include specific details in your response. <|eot_id|>
     response_tokens = outputs[0][inputs.input_ids.shape[-1]:]
     decoded_response = tokenizer.decode(response_tokens, skip_special_tokens=True)
     
-    return decoded_response.replace("<|eot_id|>", "").strip()
+    # Clean up any potential leftover special tokens
+    return decoded_response.replace("<|end|>", "").strip()
 
 
-# --- Google Generative AI LLM (Gemini) ---
+# --- Google Generative AI LLM (Gemini for Query Construction) ---
 
 def get_gemini_llm():
     """
@@ -82,8 +78,8 @@ def get_gemini_llm():
     Used for the query construction node.
     """
     return ChatGoogleGenerativeAI(
-        model="gemini-1.5-pro",
-        temperature=0,
+        model="gemini-2.0-flash",
+        temperature=0, # Set to 0 for deterministic, structured output
         safety_settings={
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
@@ -125,7 +121,7 @@ def get_bm25_retriever():
 
 def get_redis_cache():
     """Initializes and returns the Redis vector store for caching."""
-    url = "redis://localhost:6379"  # docker run --name my-redis -p 6379:6379 -v redis-data:/data -d redis/redis-stack:latest
+    url = "redis://localhost:6379"
     ttl_seconds = 3600 * 24  # Remove caching after one day
 
     return RedisVectorStore(

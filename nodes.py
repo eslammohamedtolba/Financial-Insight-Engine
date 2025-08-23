@@ -1,36 +1,34 @@
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.documents import Document
-from state import QueryConstruct, FinancialAnalysisState, Metadata
 from langchain_core.prompts import ChatPromptTemplate
+from state import QueryConstruct, FinancialAnalysisState, Metadata
 
-# Import all initialization functions
+# --- Import all initialization functions from our new config ---
 from config import (
     get_gemini_llm,
     get_redis_cache,
     get_chroma_store,
     get_bm25_retriever,
     get_reranker_model,
-    load_llama3_model,
-    llama3_inference
+    load_phi3_model,
+    phi3_inference
 )
 
-# Initialize all components once when the application starts
+# --- Initialize all components once when the application starts ---
 gemini_llm = get_gemini_llm()
 redis_cache = get_redis_cache()
 chroma_vector_store = get_chroma_store()
 bm25 = get_bm25_retriever()
 reranker = get_reranker_model()
 
-# Load our powerful, fine-tuned local model ONCE. This will take a moment.
-llama3_model, llama3_tokenizer = load_llama3_model()
+# Load our powerful, fine-tuned local model ONCE.
+phi3_model, phi3_tokenizer = load_phi3_model()
+
 
 # --- Node Definitions ---
 
 def query_construct(state: FinancialAnalysisState):
-    """
-    Analyzes the user's message using Gemini to create a structured query.
-    Gemini is used here for its powerful reasoning and structured output capabilities.
-    """
+    """Analyzes the user's message using Gemini to create a structured query."""
     messages = state['messages']
     query = messages[-1].content
     
@@ -44,7 +42,7 @@ def query_construct(state: FinancialAnalysisState):
     else:
         conversation_context = "This is the first question from the user."
     
-    # Create Prompt Template
+    # Prompt template for Gemini
     prompt = ChatPromptTemplate.from_messages([
         ("system",
          "You are an expert at query analysis and refinement for a financial RAG system. "
@@ -75,13 +73,10 @@ def query_construct(state: FinancialAnalysisState):
     ])
     
     try:
-        # We use the Gemini LLM specifically for this structured output task
         structured_llm = gemini_llm.with_structured_output(QueryConstruct)
-        
         query_construct_output = structured_llm.invoke(
             prompt.format_messages(conversation_context=conversation_context, query=query)
         )
-        
         state['structured_query'] = query_construct_output or QueryConstruct(filter=Metadata(), refined_query=query)
         
     except Exception as e:
@@ -94,7 +89,6 @@ def check_cache(state: FinancialAnalysisState):
     """Checks the Redis cache using the refined query."""
     refined_query = state['structured_query'].refined_query
     
-    # Use the initialized redis_cache component
     results = redis_cache.similarity_search_with_score(query=refined_query, k=1)
     
     if results and (1 - abs(results[0][1]) >= 0.90):
@@ -112,7 +106,6 @@ def retrieve(state: FinancialAnalysisState):
     query_text = state['structured_query'].refined_query
     metadata_filter = state['structured_query'].filter.model_dump()
     
-    # Filter building logic remains the same
     cleaned_filter = {k: v for k, v in metadata_filter.items() if v is not None}
     where_clause = None
     if len(cleaned_filter) > 1:
@@ -122,11 +115,10 @@ def retrieve(state: FinancialAnalysisState):
         where_clause = {key: {"$eq": value}}
 
     try:
-        # Use the initialized retriever components
         semantic_docs = chroma_vector_store.similarity_search(query=query_text, filter=where_clause, k=3)
+
         keyword_docs = bm25.invoke(query_text)
 
-        # Reranking logic remains the same
         combined_docs = semantic_docs + keyword_docs
         seen_contents = set()
         unique_docs = [doc for doc in combined_docs if doc.page_content not in seen_contents and not seen_contents.add(doc.page_content)]
@@ -136,7 +128,8 @@ def retrieve(state: FinancialAnalysisState):
             scores = reranker.predict(rerank_pairs)
             scored_docs = sorted(zip(scores, unique_docs), reverse=True)
             
-            reranked_final_docs = [doc for score, doc in scored_docs[:2]]
+            top_n = 2 
+            reranked_final_docs = [doc for score, doc in scored_docs[:top_n]]
             state['source_documents'] = [doc.page_content for doc in reranked_final_docs]
         else:
             state['source_documents'] = []
@@ -148,23 +141,17 @@ def retrieve(state: FinancialAnalysisState):
 
 
 def generate_answer(state: FinancialAnalysisState):
-    """
-    Generates a final answer using the fine-tuned Llama 3 model and retrieved documents.
-    """
+    """Generates a final answer using the fine-tuned Phi-3 model and retrieved documents."""
     original_query = state['messages'][-1].content
-    refined_query = state['structured_query'].refined_query
     documents = state['source_documents']
-    
     context = "\n\n".join(documents) if documents else "No relevant documents were found."
     
     try:
-        # --- KEY CHANGE: Call our local Llama 3 model ---
-        # Instead of using a LangChain chain with Gemini, we call our optimized inference function.
-        answer_text = llama3_inference(
+        answer_text = phi3_inference(
             question=original_query,
             context=context,
-            model=llama3_model,
-            tokenizer=llama3_tokenizer
+            model=phi3_model,
+            tokenizer=phi3_tokenizer
         )
         
         if not answer_text:
@@ -173,7 +160,7 @@ def generate_answer(state: FinancialAnalysisState):
             answer_message = AIMessage(content=answer_text)
             
             # Store the result in the cache
-            new_doc = Document(page_content=refined_query, metadata={"response": answer_message.content})
+            new_doc = Document(page_content=state['structured_query'].refined_query, metadata={"response": answer_message.content})
             redis_cache.add_documents([new_doc])
 
         state['messages'].append(answer_message)

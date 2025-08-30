@@ -59,6 +59,8 @@ def create_graph():
         conn=get_db_connection(autocommit=True)
     )
     
+    checkpointer.setup()
+    
     app = workflow.compile(checkpointer=checkpointer)
     
     return app

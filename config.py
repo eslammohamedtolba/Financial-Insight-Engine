@@ -4,11 +4,9 @@ from langchain_redis import RedisVectorStore, RedisConfig
 from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from sentence_transformers import CrossEncoder
+from settings import settings
 import pickle
-from dotenv import load_dotenv
 import torch
-
-load_dotenv()
 
 # --- Local Fine-Tuned LLM (Phi-3) ---
 
@@ -79,6 +77,7 @@ def get_gemini_llm():
     """
     return ChatGoogleGenerativeAI(
         model="gemini-2.0-flash",
+        google_api_key=settings.google_api_key,
         temperature=0, # Set to 0 for deterministic, structured output
         safety_settings={
             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -121,7 +120,6 @@ def get_bm25_retriever():
 
 def get_redis_cache():
     """Initializes and returns the Redis vector store for caching."""
-    url = "redis://localhost:6379"
     ttl_seconds = 3600 * 24  # Remove caching after one day
 
     return RedisVectorStore(
@@ -129,7 +127,7 @@ def get_redis_cache():
         ttl=ttl_seconds,
         config=RedisConfig(
             index_name="cached_contents",
-            redis_url=url,
+            redis_url=str(settings.redis_url),
             distance_metric="COSINE",
             metadata_schema=[
                 {"name": "response", "type": "text"}

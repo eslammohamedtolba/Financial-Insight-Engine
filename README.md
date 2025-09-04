@@ -28,6 +28,7 @@ The interface provides:
 -   **Conversation Memory**: Persists conversation history using a PostgreSQL checkpointer.
 -   **Production-Ready Database Pooling**: Implements **PgBouncer** to manage database connections efficiently, preventing bottlenecks under high user load.
 -   **Interactive UI**: Built with Streamlit for a clean, real-time user experience.
+-   **Type-Safe, Centralized Configuration**: Manages all secrets and settings (PostgreSQL, Redis, API keys) through a Pydantic settings model, ensuring robust and validated configuration.
 
 ## 📊 Model Evaluation & Results
 
@@ -82,6 +83,7 @@ The system follows a sophisticated LangGraph workflow:
 -   **Persistence & Pooling**: PostgreSQL, PgBouncer
 -   **Frontend**: Streamlit
 -   **Evaluation**: Ragas
+-   **Configuration**: Pydantic-Settings
 
 ## 📋 Prerequisites
 
@@ -134,12 +136,11 @@ The system follows a sophisticated LangGraph workflow:
     LANGSMITH_API_KEY="your_langsmith_api_key"
     LANGSMITH_PROJECT="pr-pertinent-emission-45" # Or your preferred project name
 
-    # Database Configuration
-    DB_USER="myuser"
-    DB_PASSWORD="mypassword"
-    DB_HOST="localhost"
-    DB_PORT="6432" # Connect to the pgbouncer not postgresql directly
-    DB_NAME="graph_memory"
+    # PostgreSQL connection string (pointing to PgBouncer)
+    DATABASE_URL="postgresql://myuser:mypassword@localhost:6432/graph_memory"
+
+    # Redis connection string for the semantic cache
+    REDIS_URL="redis://localhost:6379"
     ```
 
     **B) For the Jupyter Notebooks (Secrets Management):**
@@ -237,6 +238,7 @@ The system follows a sophisticated LangGraph workflow:
 ├── nodes.py                         # Individual processing nodes
 ├── README.md                        # Project README file
 ├── requirements.txt                 # Python dependencies
+├── settings.py                      # Centralized Pydantic settings
 ├── state.py                         # State management and Pydantic models
 ├── Financial Analyst Assistant App.png     # UI Screenshot
 └── Financial Analyst Assistant Graph.png   # Graph Screenshot

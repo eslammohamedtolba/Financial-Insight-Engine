@@ -1,23 +1,13 @@
-import os
 import psycopg
-from dotenv import load_dotenv
-
-load_dotenv()
+from settings import settings
 
 def get_db_connection(autocommit=False):
     """
     Loads database configuration from environment variables, constructs the connection URL,
     and establishes a connection to the PostgreSQL database using psycopg.
     """
-    # --- Configuration logic is now inside this function ---
-    db_user = os.getenv("DB_USER")
-    db_password = os.getenv("DB_PASSWORD")
-    db_host = os.getenv("DB_HOST")
-    db_port = os.getenv("DB_PORT")
-    db_name = os.getenv("DB_NAME")
-
-    # Construct the database URL from the individual components
-    database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    # The database URL accessed directly from the settings object.
+    database_url = str(settings.database_url)
     
     # Return the connection object
     return psycopg.connect(database_url, autocommit=autocommit)

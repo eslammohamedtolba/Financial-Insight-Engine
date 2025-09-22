@@ -1,259 +1,374 @@
-# 🤖 Financial Insight Engine
+# 🤖 Financial Analyst Assistant
 
-A sophisticated, production-ready RAG (Retrieval-Augmented Generation) system powered by a hybrid LLM architecture. This application features a locally-run, fine-tuned **Phi-3 3.8B** for expert financial answer generation, **Google's Gemini Pro** for advanced query analysis, and **LangSmith** for full observability and monitoring.
+A production-ready, enterprise-grade RAG (Retrieval-Augmented Generation) system built with modern microservices architecture. This application features a locally-run, fine-tuned **Phi-3 3.8B** model for expert financial analysis, **Google's Gemini Pro** for intelligent query processing, and comprehensive observability through **LangSmith** integration.
 
-This application provides intelligent analysis of the latest 10-K filings from five major technology companies (Apple, Microsoft, Google, Amazon, Meta). The system leverages a state-of-the-art hybrid LLM strategy, combining a specialized local model for nuanced answer generation with a powerful API model for complex reasoning. By using a fine-tuned model, the assistant delivers responses with a consistent, expert tone, running efficiently on local hardware.
+This sophisticated system provides intelligent analysis of the latest 10-K filings from five major technology companies (Apple, Microsoft, Google, Amazon, Meta). The architecture implements a hybrid LLM strategy, combining a specialized local model for nuanced financial insights with a powerful cloud model for complex reasoning tasks, all deployed through a scalable FastAPI backend with multi-user authentication and conversation management.
 
 ## 🖥️ User Interface
 
-The Financial Insight Engine features a clean, intuitive Streamlit interface designed for seamless interaction with complex financial data:
+The Financial Analyst Assistant includes a web interface for user interaction:
 
 ![Financial Analyst Assistant Interface](Financial%20Analyst%20Assistant%20App.png)
 
-The interface provides:
-- **Real-time Chat**: Conversational interface for natural language queries about financial data.
-- **Context-Aware Responses**: The system maintains conversation history for follow-up questions.
-- **Professional Formatting**: Clean, readable responses with proper financial terminology.
-- **Session Management**: Persistent conversation history throughout your analysis session.
+The interface provides secure user authentication, multi-conversation support, and real-time chat capabilities for financial analysis queries.
 
 ## ✨ Key Features
 
--   **Hybrid LLM Architecture**: Leverages the strengths of a specialized local model (Phi-3) for generation and a powerful API model (Gemini) for query analysis.
--   **Full Observability with LangSmith**: Integrates LangSmith for end-to-end tracing of the RAG pipeline, enabling detailed monitoring, debugging, and performance analysis of each component.
--   **Fine-Tuned for Finance**: Utilizes a `microsoft/Phi-3-mini-4k-instruct` model fine-tuned on financial Q&A, providing expert, context-aware responses.
--   **High-Performance Local Inference**: Optimized with **Unsloth** for 2x faster, low-memory 4-bit inference on consumer GPUs.
--   **Hybrid Retrieval System**: Combines ChromaDB vector search with BM25 keyword search for robust document retrieval.
--   **Intelligent Query Construction**: Refines user queries using conversation context.
--   **Smart Caching**: Redis-based semantic similarity caching to reduce latency and redundant processing.
--   **Conversation Memory**: Persists conversation history using a PostgreSQL checkpointer.
--   **Production-Ready Database Pooling**: Implements **PgBouncer** to manage database connections efficiently, preventing bottlenecks under high user load.
--   **Interactive UI**: Built with Streamlit for a clean, real-time user experience.
--   **Type-Safe, Centralized Configuration**: Manages all secrets and settings (PostgreSQL, Redis, API keys) through a Pydantic settings model, ensuring robust and validated configuration.
+### Production Architecture
+- **Microservices Design**: Decoupled FastAPI backend with domain-driven service separation
+- **Multi-User Support**: Complete JWT-based authentication and authorization system
+- **Horizontal Scalability**: Stateless architecture designed for cloud deployment and auto-scaling
+- **Database Connection Pooling**: PgBouncer integration for efficient PostgreSQL connection management
+- **Production Security**: Comprehensive security implementation with CORS, JWT tokens, and secure secret management
+- **Thread-Safe Operations**: Concurrent request handling with proper GPU resource locking for ML models
+
+### Advanced AI/ML Architecture
+- **Hybrid LLM Strategy**: Leverages specialized local model (Phi-3) for financial generation and cloud model (Gemini) for complex query analysis
+- **Fine-Tuned Local Model**: `microsoft/Phi-3-mini-4k-instruct` model specifically fine-tuned on financial Q&A datasets
+- **Intelligent Query Construction**: Advanced query refinement using conversation context, metadata extraction, and structured output generation
+- **High-Performance Inference**: Optimized with **Unsloth** for 2x faster, memory-efficient 4-bit quantized inference
+- **Advanced Reranking**: CrossEncoder model integration for optimal document relevance scoring
+
+### Enterprise Data Management
+- **Hybrid Retrieval System**: Sophisticated combination of ChromaDB vector search with BM25 keyword search for comprehensive document retrieval
+- **Semantic Caching**: Redis-based similarity caching with configurable similarity thresholds to reduce latency and API costs
+- **Persistent Conversation Memory**: PostgreSQL-backed conversation history with LangGraph checkpointing system
+- **Document Processing Pipeline**: Automated processing of SEC 10-K filings with intelligent chunking and metadata extraction
+- **Multi-Tenant Data Isolation**: Complete user data separation with conversation ownership verification
+
+### Observability & Production Monitoring
+- **Full Pipeline Tracing**: LangSmith integration for end-to-end monitoring, debugging, and performance analysis of the entire RAG pipeline
+- **Structured Logging**: Comprehensive error handling and structured logging throughout all services
+- **Performance Metrics**: Query latency tracking, cache hit rate monitoring, and model inference timing analysis
+- **Resource Management**: GPU memory optimization, connection pool monitoring, and service health checks
 
 ## 📊 Model Evaluation & Results
 
-To quantitatively validate the effectiveness of the fine-tuning process, the `RAG_Pipeline_Evaluation.ipynb` notebook was created. This notebook uses the **Ragas** framework to evaluate and compare the performance of the fine-tuned Phi-3 model against the base model on a "golden dataset" of financial questions.
-
-The evaluation clearly demonstrates the value of fine-tuning, showing significant improvements in key areas like factual consistency (`faithfulness`).
+The system's effectiveness is validated through comprehensive evaluation using the **Ragas** framework, comparing the fine-tuned Phi-3 model against the base model on a curated financial Q&A dataset developed specifically for this domain.
 
 ### Evaluation Summary
 
-| Metric             | Fine-Tuned Model | Base Model | Improvement (%) |
-| ------------------ | ---------------- | ---------- | --------------- |
-| **faithfulness** | 0.94583          | 0.80715    | +17.18%         |
-| **answer_correctness** | 0.54475          | 0.59113    | -7.85%          |
-| **answer_relevancy** | 0.96889          | 0.96889    | 0.00%           |
+| Metric                | Fine-Tuned Model | Base Model | Improvement (%) |
+| -------------------- | ---------------- | ---------- | --------------- |
+| **faithfulness**     | 0.94583          | 0.80715    | +17.18%         |
+| **answer_correctness** | 0.54475        | 0.59113    | -7.85%          |
+| **answer_relevancy**  | 0.96889          | 0.96889    | 0.00%           |
 | **context_precision** | 1.00000          | 0.91667    | +9.09%          |
-| **context_recall** | 0.44444          | 0.44444    | 0.00%           |
+| **context_recall**    | 0.44444          | 0.44444    | 0.00%           |
 
+The fine-tuned model demonstrates significant improvements in factual consistency (faithfulness) and context precision, crucial metrics for financial analysis applications where accuracy and reliability are paramount.
 
 ## 🏗️ Architecture
 
+### Microservices Backend Architecture
+
+The application implements a sophisticated microservices architecture using FastAPI with clear separation of concerns and domain-driven design principles:
+
+#### Core Services
+- **Authentication Service**: JWT-based user management with bcrypt password hashing, token generation/validation, and secure session handling
+- **Conversation Service**: Multi-user conversation management with automatic naming, CRUD operations, and conversation history management
+- **Assistant Service**: Core RAG pipeline orchestration using LangGraph with async/sync hybrid processing for optimal performance
+- **Model Service**: Thread-safe ML model management with GPU resource locking, model loading optimization, and inference caching
+- **Retrieval Service**: Hybrid search implementation combining semantic and keyword search with document reranking
+- **Cache Service**: Redis-based semantic caching with configurable similarity thresholds and TTL management
+
+#### Database Architecture
+- **PostgreSQL**: Primary database for user data, conversations, and LangGraph checkpoints
+- **PgBouncer**: Connection pooling layer with transaction-level pooling for optimal database resource utilization
+- **Redis**: High-performance caching layer for semantic similarity search and session management
+- **Alembic**: Database migration management for schema versioning and deployment
+
 ### The Hybrid LLM Strategy
 
-This project employs two different LLMs, each assigned to the task it performs best:
+This project employs a sophisticated dual-LLM approach, optimizing each model for specific cognitive tasks:
 
-1.  **Google Gemini Pro (Query Analysis)**: Used for its superior reasoning and structured output capabilities. It deconstructs user intent, handles conversation history to resolve follow-up questions, and extracts metadata filters for the retrieval system.
-2.  **Fine-Tuned Phi-3 (Answer Generation)**: Used for the final, context-grounded response. As a specialized model, it delivers answers in the precise tone and format it was trained on, running efficiently and privately on local hardware.
+1. **Google Gemini Pro (Query Analysis & Reasoning)**:
+   - Complex user intent analysis and query decomposition
+   - Conversation context resolution and follow-up question interpretation
+   - Structured metadata extraction for search filtering and optimization
+   - Pydantic-based structured output generation for downstream processing
+   - Temperature-controlled generation for deterministic structured outputs
 
-### Graph Architecture
+2. **Fine-Tuned Phi-3 (Domain-Specific Generation)**:
+   - Context-grounded financial response generation with expert domain knowledge
+   - Consistent financial terminology and professional tone maintenance
+   - Efficient local inference with 4-bit quantization and Unsloth optimization
+   - Privacy-preserving processing without external API dependencies for sensitive financial data
+   - Custom chat template optimization for financial analysis tasks
+
+### LangGraph Workflow Architecture
 
 ![Financial Analyst Assistant Graph](Financial%20Analyst%20Assistant%20Graph.png)
 
-The system follows a sophisticated LangGraph workflow:
-1.  **Query Construction**: Gemini analyzes user intent and conversation history.
-2.  **Cache Check**: Searches Redis cache for similar previous queries.
-3.  **Hybrid Retrieval**: If cache miss, performs semantic + keyword search.
-4.  **Reranking**: A CrossEncoder model ranks and selects the top 2 most relevant documents.
-5.  **Answer Generation**: The fine-tuned Phi-3 model generates the final response, which is then stored in the cache.
+The system follows an optimized LangGraph workflow designed for maximum efficiency and reliability:
+
+1. **Query Construction Node**: Gemini-powered analysis of user intent with conversation context integration
+2. **Semantic Cache Check**: Redis similarity search with configurable threshold-based cache hits
+3. **Hybrid Retrieval Node**: Parallel semantic (ChromaDB) and keyword (BM25) search execution
+4. **Document Reranking**: CrossEncoder-based relevance scoring and top-k selection
+5. **Answer Generation Node**: Fine-tuned Phi-3 inference with context grounding
+6. **Response Caching**: Automatic storage of generated responses for future similarity matching
+
+### Production Infrastructure Patterns
+
+- **Async/Sync Hybrid Architecture**: FastAPI async endpoints with `asyncio.to_thread()` for synchronous ML operations
+- **Connection Management**: PgBouncer pooling with configurable pool sizes and connection limits
+- **Resource Isolation**: Thread-safe GPU resource management with explicit locking mechanisms
+- **Error Handling**: Comprehensive exception handling with graceful degradation and user-friendly error messages
+- **Configuration Management**: Pydantic Settings for type-safe, validated environment configuration
 
 ## 🛠️ Technical Stack
 
--   **Answer Generation LLM**: Fine-tuned `microsoft/Phi-3-mini-4k-instruct`
--   **Query Analysis LLM**: Google Gemini 1.5 Pro
--   **Fine-Tuning & Inference Engine**: Unsloth
--   **Monitoring & Observability**: LangSmith
--   **ML Framework**: PyTorch
--   **Embeddings**: `BAAI/bge-small-en-v1.5` (FastEmbed)
--   **Vector Database**: ChromaDB
--   **Keyword Search**: `rank_bm25`
--   **Caching**: Redis Vector Store
--   **Reranking**: `cross-encoder/ms-marco-MiniLM-L-6-v2`
--   **Orchestration**: LangGraph
--   **Persistence & Pooling**: PostgreSQL, PgBouncer
--   **Frontend**: Streamlit
--   **Evaluation**: Ragas
--   **Configuration**: Pydantic-Settings
+### Backend & Infrastructure
+- **API Framework**: FastAPI with async/await for high-concurrency request handling
+- **Database**: PostgreSQL with async drivers (asyncpg) and connection pooling (PgBouncer)
+- **Caching**: Redis with vector similarity search capabilities and TTL management
+- **Migration Management**: Alembic for database schema versioning and deployment
+- **Process Management**: Production-ready service orchestration and deployment patterns
+
+### AI/ML Pipeline
+- **Answer Generation**: Fine-tuned `microsoft/Phi-3-mini-4k-instruct` with domain-specific training
+- **Query Analysis**: Google Gemini 1.5 Pro with structured output capabilities
+- **Fine-Tuning Engine**: Unsloth for efficient model optimization with 4-bit quantization
+- **ML Framework**: PyTorch with CUDA acceleration and memory optimization
+- **Embeddings**: `BAAI/bge-small-en-v1.5` via FastEmbed for efficient embedding generation
+- **Vector Database**: ChromaDB for semantic search with metadata filtering
+- **Keyword Search**: `rank_bm25` for traditional information retrieval
+- **Reranking**: `cross-encoder/ms-marco-MiniLM-L-6-v2` for document relevance optimization
+
+### Production & Monitoring
+- **Workflow Orchestration**: LangGraph for complex RAG pipeline management
+- **Observability**: LangSmith for comprehensive tracing, monitoring, and debugging
+- **Authentication**: JWT with secure token generation and validation
+- **Configuration**: Pydantic Settings for type-safe environment management
+- **Evaluation**: Ragas framework for comprehensive RAG system assessment
+- **Performance**: Thread-safe model management with GPU resource optimization
 
 ## 📋 Prerequisites
 
--   **Hardware**: An **NVIDIA GPU** with CUDA 12.1+ support.
-    -   **Minimum 6GB VRAM** is required to run the application.
-    -   8GB+ VRAM is recommended for a smoother experience.
--   **Python**: Python 3.11 (64-bit).
--   **Docker**: For running the PostgreSQL and Redis databases.
--   **API Keys & Secrets**: You will need several API keys for different parts of the project.
+### Hardware Requirements
+- **NVIDIA GPU**: CUDA 12.1+ compatible GPU required for local model inference
+- **VRAM**: Minimum 6GB, 8GB+ recommended for optimal Phi-3 performance
+- **RAM**: 16GB system memory recommended for full pipeline operation
+- **Storage**: 10GB+ free space for models, vector databases, and data storage
+
+### Software Requirements
+- **Python**: 3.11+ (64-bit) with pip and venv support
+- **Docker**: Latest version with Docker Compose for infrastructure services
+- **Git**: For repository management and version control
+- **CUDA Toolkit**: 12.1+ for GPU acceleration and PyTorch compatibility
+
+### API Keys & Services
+Required API keys for full functionality:
+- **Google AI Studio**: Gemini Pro API access for query analysis
+- **LangSmith**: Monitoring and observability platform access
+- **SEC EDGAR API**: Financial data retrieval (data preparation notebooks)
+- **OpenRouter**: Multi-model access for evaluation (notebooks only)
+- **Hugging Face**: Model downloads and fine-tuning access
 
 ## 🚀 Installation & Setup
 
-1.  **Clone the repository**
-    ```bash
-    git clone [https://github.com/eslammohamedtolba/Financial-Insight-Engine.git](https://github.com/eslammohamedtolba/Financial-Insight-Engine.git)
-    cd Financial-Insight-Engine
-    ```
+### 1. Repository Setup
+```bash
+git clone https://github.com/eslammohamedtolba/Financial-Insight-Engine.git
+cd Financial-Insight-Engine
+```
 
-2.  **Create and activate virtual environment**
-    ```bash
-    # Create the environment
-    python -m venv venv
+### 2. Python Environment Configuration
+```bash
+# Create isolated virtual environment
+python -m venv venv
 
-    # Activate on Windows
-    .\venv\Scripts\activate
+# Activate environment
+# Windows:
+.\venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
 
-    # Activate on macOS/Linux
-    source venv/bin/activate
-    ```
+# Install all dependencies including CUDA PyTorch
+pip install -r requirements.txt
+```
 
-3.  **Install Dependencies**
-    The `requirements.txt` file is configured to install all packages, including the correct CUDA version of PyTorch.
-    ```bash
-    pip install -r requirements.txt
-    ```
+### 3. Environment Variables Configuration
 
-4.  **Set up API Keys and Environment Variables**
+Create a `.env` file in the root directory with production-ready configuration:
 
-    This project requires two sets of credentials: one for the main Streamlit application and another for running the data processing and evaluation notebooks.
+```env
+# Application Settings
+PROJECT_NAME="Financial Analyst Assistant"
+API_V1_STR="/api/v1"
 
-    **A) For the Streamlit Application (`.env` file):**
-    Create a `.env` file in the root directory for the application's runtime credentials.
-    ```env
-    # Google Gemini API for the application
-    GOOGLE_API_KEY="your_gemini_api_key"
+# Security Configuration
+JWT_SECRET="your_secure_jwt_secret_key_here"
+JWT_ALGORITHM="HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-    # LangSmith Configuration for Observability
-    LANGSMITH_TRACING="true"
-    LANGSMITH_ENDPOINT="[https://api.smith.langchain.com](https://api.smith.langchain.com)"
-    LANGSMITH_API_KEY="your_langsmith_api_key"
-    LANGSMITH_PROJECT="pr-pertinent-emission-45" # Or your preferred project name
+# Google Gemini API Configuration
+GOOGLE_API_KEY="your_gemini_api_key"
 
-    # PostgreSQL connection string (pointing to PgBouncer)
-    DATABASE_URL="postgresql://myuser:mypassword@localhost:6432/graph_memory"
+# LangSmith Observability Configuration
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_API_KEY="your_langsmith_api_key"
+LANGSMITH_PROJECT="your_project_name"
 
-    # Redis connection string for the semantic cache
-    REDIS_URL="redis://localhost:6379"
-    ```
+# Database Configuration (PgBouncer endpoints)
+DATABASE_URL="postgresql+asyncpg://myuser:mypassword@localhost:6432/mydatabase"
+LANGGRAPH_DATABASE_URL="postgresql://myuser:mypassword@localhost:6432/mydatabase"
 
-    **B) For the Jupyter Notebooks (Secrets Management):**
-    The notebooks for data preparation, fine-tuning, and evaluation require additional keys. **Do not add these to the `.env` file.** Instead, manage them using a secrets manager appropriate for your environment (e.g., Colab Secrets, Kaggle Secrets, or environment variables in your cloud IDE).
-    -   `OPENROUTER_API_KEY`: For accessing various models for evaluation via OpenRouter.
-    -   `HF_TOKEN`: Your Hugging Face token for downloading models.
-    -   `SEC_API_KEY`: Your API key for the SEC EDGAR database to download filings.
-    -   `WANDB_API_KEY`: (Optional) Your Weights & Biases key for logging fine-tuning runs.
+# Redis Cache Configuration
+REDIS_URL="redis://localhost:6379"
+```
 
+### 4. Production Infrastructure Setup
 
-5.  **Start Docker Infrastructure**
+Create dedicated Docker network for service communication:
+```bash
+docker network create financial-analyst-net
+```
 
-    First, create a dedicated Docker network for the services to communicate with each other.
+Deploy production-ready database infrastructure:
 
-    ```bash
-    docker network create financial-analyst-net
-    ```
+**PostgreSQL Database Server:**
+```bash
+docker run --name my-postgres --network financial-analyst-net -d -p 5432:5432 \
+  -e POSTGRES_USER=myuser \
+  -e POSTGRES_PASSWORD=mypassword \
+  -e POSTGRES_DB=mydatabase \
+  -v postgres_data:/var/lib/postgresql/data \
+  postgres:16
+```
 
-    Next, run the following commands to start the PostgreSQL, Redis, and PgBouncer services on the new network.
+**Redis Cache Server:**
+```bash
+docker run --name my-redis --network financial-analyst-net -d -p 6379:6379 \
+  -v redis-data:/data \
+  redis/redis-stack:latest
+```
 
-    **PostgreSQL:**
-    (The backend database for storing conversation history)
+**PgBouncer Connection Pooler:**
+```bash
+docker run --name my-pgbouncer --network financial-analyst-net -d -p 6432:6432 \
+  -e POSTGRESQL_HOST=my-postgres \
+  -e POSTGRESQL_PORT=5432 \
+  -e POSTGRESQL_USERNAME=myuser \
+  -e POSTGRESQL_PASSWORD=mypassword \
+  -e POSTGRESQL_DATABASE=mydatabase \
+  -e PGBOUNCER_DATABASE=mydatabase \
+  -e PGBOUNCER_USERNAME=myuser \
+  -e PGBOUNCER_PASSWORD=mypassword \
+  -e PGBOUNCER_PORT=6432 \
+  -e PGBOUNCER_POOL_MODE=transaction \
+  -e PGBOUNCER_DEFAULT_POOL_SIZE=20 \
+  -e PGBOUNCER_MAX_CLIENT_CONN=1000 \
+  -e PGBOUNCER_MAX_DB_CONN=100 \
+  -e PGBOUNCER_AUTH_TYPE=md5 \
+  bitnami/pgbouncer:latest
+```
 
-    ```bash
-    docker run --name my-postgres --network financial-analyst-net -d -p 5432:5432 -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=mypassword -e POSTGRES_DB=graph_memory -v postgres_data:/var/lib/postgresql/data postgres:16
-    ```
+### 5. Data Pipeline & Model Preparation
 
-    **Redis:**
-    (The semantic cache for storing query results)
+Execute the data preparation and model training pipeline in sequence:
 
-    ```bash
-    docker run --name my-redis --network financial-analyst-net -d -p 6379:6379 -v redis-data:/data redis/redis-stack:latest
-    ```
+1. **Knowledge Base Construction:**
+   ```bash
+   jupyter notebook Data/Knowledge_Base_Construction.ipynb
+   ```
+   - Downloads and processes SEC 10-K filings
+   - Creates ChromaDB vector store with optimized chunking
+   - Builds BM25 keyword search index
 
-    **PgBouncer:**
-    (The connection pooler that sits in front of PostgreSQL)
+2. **Model Fine-Tuning:**
+   ```bash
+   jupyter notebook Data/Fine-Tuning_Phi-3_for_Financial_QA_with_Unsloth.ipynb
+   ```
+   - Fine-tunes Phi-3 model on financial Q&A dataset
+   - Implements LoRA adapters for efficient training
+   - Optimizes model for 4-bit inference
 
-    ```bash
-    docker run \
-      --name my-pgbouncer \
-      --network financial-analyst-net \
-      -d \
-      -p 6432:6432 \
-      -e POSTGRESQL_HOST=my-postgres \
-      -e POSTGRESQL_PORT=5432 \
-      -e POSTGRESQL_USERNAME=myuser \
-      -e POSTGRESQL_PASSWORD=mypassword \
-      -e POSTGRESQL_DATABASE=graph_memory \
-      -e PGBOUNCER_DATABASE=graph_memory \
-      -e PGBOUNCER_USERNAME=myuser \
-      -e PGBOUNCER_PASSWORD=mypassword \
-      -e PGBOUNCER_PORT=6432 \
-      -e PGBOUNCER_POOL_MODE=transaction \
-      -e PGBOUNCER_DEFAULT_POOL_SIZE=20 \
-      -e PGBOUNCER_MAX_CLIENT_CONN=1000 \
-      -e PGBOUNCER_MAX_DB_CONN=100 \
-      -e PGBOUNCER_AUTH_TYPE=md5 \
-      bitnami/pgbouncer:latest
-    ```
+3. **RAG Pipeline Evaluation:**
+   ```bash
+   jupyter notebook Data/RAG_Pipeline_Evaluation.ipynb
+   ```
+   - Comprehensive evaluation using Ragas library
+   - Compares fine-tuned vs base model performance
+   - Generates detailed performance metrics
 
-6.  **Run the Jupyter Notebooks (CRITICAL STEP)**
-    You must run the provided Jupyter Notebooks in order. This process downloads financial data, builds the retrieval databases, fine-tunes the local model, and evaluates its performance.
+### 6. Database Schema Initialization
 
-    -   **1. Prepare Retrieval Databases:**
-        Open and run all cells in `Knowledge_Base_Construction.ipynb`. This will create the ChromaDB vector store and the BM25 retriever file.
+Initialize production database schema:
+```bash
+# Run database migrations
+alembic upgrade head
+```
 
-    -   **2. Fine-Tune the Language Model:**
-        Open and run all cells in `Fine-Tuning_Phi-3_for_Financial_QA_with_Unsloth.ipynb`. This will create the `Data/phi3_finetuned_model` directory, which is required by the application.
-        
-    -   **3. Evaluate the RAG Pipeline:**
-        Open and run all cells in `RAG_Pipeline_Evaluation.ipynb`. This will generate a quantitative comparison of the fine-tuned model versus the base model.
+### 7. Production Application Launch
 
-7.  **Launch the application**
-    Ensure all setup steps are complete and your Docker containers are running.
+Start the production-ready FastAPI server:
+```bash
+# Development mode with hot reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-    ```bash
-    streamlit run main.py
-    ```
+# Production mode with multiple workers
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+Access the application at `http://localhost:8000`
 
 ## 📁 Project Structure
-````
-├── Data/
-│   ├── chroma_db/                        # (Generated) ChromaDB vector store
-│   ├── phi3_finetuned_model/             # (Generated) Fine-tuned Phi-3 model weights
-│   ├── bm25_retriever.pkl                # (Generated) BM25 retriever for keyword search
-│   ├── Knowledge_Base_Construction.ipynb                       # Notebook to create the vector & keyword databases
-│   ├── Fine-Tuning_Phi-3_for_Financial_QA_with_Unsloth.ipynb   # Notebook to fine-tune the Phi-3 model
-│   └── RAG_Pipeline_Evaluation.ipynb                           # Notebook to evaluate model performance with Ragas
-├── .env                             # Local environment variables for the Streamlit app
-├── .gitignore                       # Git ignore file
-├── config.py                        # Configuration and model initialization
-├── db_utils.py                     # Database utility functions
-├── graph.py                         # LangGraph workflow definition
-├── main.py                          # Streamlit application entry point
-├── nodes.py                         # Individual processing nodes
-├── README.md                        # Project README file
-├── requirements.txt                 # Python dependencies
-├── settings.py                      # Centralized Pydantic settings
-├── state.py                         # State management and Pydantic models
-├── Financial Analyst Assistant App.png     # UI Screenshot
-└── Financial Analyst Assistant Graph.png   # Graph Screenshot
-````
 
-## 🔒 Safety & Compliance
+```
+├── app/                              # FastAPI microservices application
+│   ├── assistant/                    # RAG pipeline and AI services
+│   │   ├── controller/              # Business logic and service orchestration
+│   │   │   ├── agent_controller.py  # Main RAG pipeline orchestration
+│   │   │   ├── agent_service.py     # LangGraph workflow implementation
+│   │   │   ├── model_service.py     # Thread-safe ML model management
+│   │   │   ├── retrieval_service.py # Hybrid search implementation
+│   │   │   ├── cache_service.py     # Redis semantic caching
+│   │   │   └── state_service.py     # LangGraph state management
+│   │   └── routes.py                # RAG API endpoints
+│   ├── authentication/              # JWT authentication system
+│   │   ├── controller/              # Auth business logic
+│   │   ├── dependencies.py          # JWT middleware and validation
+│   │   └── routes.py                # Authentication API endpoints
+│   ├── conversation/                # Multi-user conversation management
+│   │   ├── controller/              # Conversation business logic
+│   │   └── routes.py                # Conversation CRUD API
+│   ├── core/                        # Shared models and schemas
+│   │   ├── models/                  # SQLModel database models
+│   │   └── schemas/                 # Pydantic API schemas
+│   ├── db/                          # Database configuration and sessions
+│   ├── helpers/                     # Utility functions and settings
+│   └── main.py                      # FastAPI application entry point
+├── web-ui/                          # Frontend web interface
+├── Data/                            # Data processing and model storage
+│   ├── chroma_db/                   # (Generated) ChromaDB vector database
+│   ├── phi3_finetuned_model/        # (Generated) Fine-tuned Phi-3 model
+│   ├── bm25_retriever.pkl           # (Generated) BM25 keyword search index
+│   ├── Knowledge_Base_Construction.ipynb     # Data processing pipeline
+│   ├── Fine-Tuning_Phi-3_for_Financial_QA_with_Unsloth.ipynb
+│   └── RAG_Pipeline_Evaluation.ipynb        # Model evaluation
+├── migrations/                      # Alembic database migrations
+├── requirements.txt                 # Python dependencies with CUDA PyTorch
+├── alembic.ini                      # Database migration configuration
+├── .env                             # Environment variables configuration
+└── README.md                        # Project documentation
+```
 
--   Relaxed safety settings on Gemini for financial document analysis.
--   Proper error handling and fallback mechanisms.
--   Secure environment variable management using `.env` files and secrets management.
+## 🔒 Security & Compliance
+
+- **Authentication**: Production-grade JWT implementation with secure token handling
+- **Authorization**: User-based conversation access control with ownership verification
+- **Data Privacy**: Local model inference ensures sensitive financial data never leaves your infrastructure
+- **API Security**: Comprehensive CORS configuration, rate limiting, and input validation
+- **Secret Management**: Environment-based configuration with Pydantic validation
+- **Database Security**: Connection pooling with authentication and encrypted connections
 
 ## 🤝 Contributing
 
-1.  Fork the repository
-2.  Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/advanced-rag-enhancement`
+3. Commit your changes: `git commit -m 'Add advanced RAG enhancement'`
+4. Push to the branch: `git push origin feature/advanced-rag-enhancement`
+5. Open a Pull Request

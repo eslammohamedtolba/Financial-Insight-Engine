@@ -12,7 +12,7 @@ class Metadata(BaseModel):
     """
     company: Optional[Literal["AAPL", "MSFT", "GOOG", "AMZN", "META"]] = Field(
         default=None,
-        description="The stock ticker for a specific company to filter by. Must be one of the provided values. Leave None if no specific company is mentioned."
+        description="The stock ticker for a specific company to filter by. Must be one of the provided uppercase values: 'AAPL', 'MSFT', 'GOOG', 'AMZN', 'META'. Leave None if no specific company is mentioned."
     )
     category: Optional[Literal["risks", "management_dis"]] = Field(
         default=None,
@@ -36,7 +36,7 @@ class QueryConstruct(BaseModel):
         )
     )
 
-# --- LangGraph State Definition ---
+# --- State Definition ---
 
 class FinancialAnalysisState(TypedDict):
     """

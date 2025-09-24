@@ -191,34 +191,22 @@ pip install -r requirements.txt
 
 ### 3. Environment Variables Configuration
 
-Create a `.env` file in the root directory with production-ready configuration:
+This project uses a `.env` file to manage secrets and configurations.
 
-```env
-# Application Settings
-PROJECT_NAME="Financial Analyst Assistant"
-API_V1_STR="/api/v1"
+1.  **Create your environment file** by copying the provided template. In your terminal, run the command that corresponds to your operating system from the block below.
 
-# Security Configuration
-JWT_SECRET="your_secure_jwt_secret_key_here"
-JWT_ALGORITHM="HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES=60
+    ```bash
+    # For Windows (Command Prompt)
+    copy .env.example .env
 
-# Google Gemini API Configuration
-GOOGLE_API_KEY="your_gemini_api_key"
+    # For Windows (PowerShell)
+    Copy-Item .env.example .env
 
-# LangSmith Observability Configuration
-LANGSMITH_TRACING=true
-LANGSMITH_ENDPOINT=https://api.smith.langchain.com
-LANGSMITH_API_KEY="your_langsmith_api_key"
-LANGSMITH_PROJECT="your_project_name"
+    # For macOS / Linux
+    cp .env.example .env
+    ```
 
-# Database Configuration (PgBouncer endpoints)
-DATABASE_URL="postgresql+asyncpg://myuser:mypassword@localhost:6432/mydatabase"
-LANGGRAPH_DATABASE_URL="postgresql://myuser:mypassword@localhost:6432/mydatabase"
-
-# Redis Cache Configuration
-REDIS_URL="redis://localhost:6379"
-```
+2.  **Add your credentials**. Open the new `.env` file and replace the placeholder values (e.g., `your_google_api_key_here`) with your actual API keys and secrets.
 
 ### 4. Production Infrastructure Setup
 

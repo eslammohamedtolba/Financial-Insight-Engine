@@ -74,7 +74,7 @@ The application implements a sophisticated microservices architecture using Fast
 
 #### Database Architecture
 - **PostgreSQL**: Primary database for user data, conversations, and LangGraph checkpoints
-- **PgBouncer**: Connection pooling layer with transaction-level pooling for optimal database resource utilization
+- **PgBouncer**: Connection pooling layer with session-level pooling for optimal database resource utilization
 - **Redis**: High-performance caching layer for semantic similarity search and session management
 - **Alembic**: Database migration management for schema versioning and deployment
 
@@ -243,7 +243,7 @@ docker run --name my-postgres --network financial-analyst-net -d -p 5432:5432 \
 ```bash
 docker run --name my-redis --network financial-analyst-net -d -p 6379:6379 \
   -v redis-data:/data \
-  redis/redis-stack:latest
+  redis/redis-stack:7.2.0-v13
 ```
 
 **PgBouncer Connection Pooler:**
@@ -258,12 +258,12 @@ docker run --name my-pgbouncer --network financial-analyst-net -d -p 6432:6432 \
   -e PGBOUNCER_USERNAME=myuser \
   -e PGBOUNCER_PASSWORD=mypassword \
   -e PGBOUNCER_PORT=6432 \
-  -e PGBOUNCER_POOL_MODE=transaction \
+  -e PGBOUNCER_POOL_MODE=session \
   -e PGBOUNCER_DEFAULT_POOL_SIZE=20 \
   -e PGBOUNCER_MAX_CLIENT_CONN=1000 \
   -e PGBOUNCER_MAX_DB_CONN=100 \
   -e PGBOUNCER_AUTH_TYPE=md5 \
-  bitnami/pgbouncer:latest
+  bitnami/pgbouncer:1.21.0
 ```
 
 ### 5. Data Pipeline & Model Preparation

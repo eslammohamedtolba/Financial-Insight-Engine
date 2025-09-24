@@ -3,11 +3,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from .helpers.settings import settings
+from .helpers import settings
 from app.assistant.controller.agent_controller import startup_event_handler, shutdown_event_handler
-from app.authentication.routes import auth_router
-from app.assistant.routes import chat_router
-from app.conversation.routes import conversation_router
+from app import api_router
 
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -26,9 +24,7 @@ app.add_event_handler("startup", startup_event_handler)
 app.add_event_handler("shutdown", shutdown_event_handler)
 
 # Include API Routers
-app.include_router(auth_router)
-app.include_router(chat_router)
-app.include_router(conversation_router)
+app.include_router(api_router)
 
 # Mount static files (for frontend assets and icons)
 web_ui_path = Path(__file__).parent.parent / "web-ui"

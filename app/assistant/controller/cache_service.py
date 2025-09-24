@@ -4,7 +4,7 @@ from langchain_redis import RedisVectorStore, RedisConfig
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 import logging
 from .base_service import BaseService
-from app.helpers.settings import settings
+from app.helpers import settings
 
 logger = logging.getLogger(__name__)
 

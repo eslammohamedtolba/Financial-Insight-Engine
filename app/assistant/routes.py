@@ -7,13 +7,12 @@ import uuid
 import logging
 import asyncio
 
-from app.core.schemas.Conversation import ConversationMessage
-from app.core.models.User import User
-from app.core.models.Conversation import Conversation
+from app.core.schemas import ConversationMessage
+from app.core.models import User, Conversation
 from app.authentication.dependencies import get_current_user
-from app.db.session import get_session
-from .controller.agent_controller import agent_service
-from app.conversation.controller.ConversationController import ConversationController
+from app.db import get_session
+from .controller import agent_service
+from app.conversation.controller import ConversationController
 
 logger = logging.getLogger(__name__)
 

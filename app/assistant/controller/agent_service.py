@@ -6,7 +6,7 @@ from .state_service import FinancialAnalysisState
 from .model_service import ModelService
 from .retrieval_service import RetrievalService
 from .cache_service import CacheService
-from app.helpers.settings import settings
+from app.helpers import settings
 import asyncio
 import uuid
 import logging

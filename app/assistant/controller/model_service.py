@@ -6,7 +6,7 @@ from .state_service import QueryConstruct, Metadata
 from sentence_transformers import CrossEncoder
 from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
 from pathlib import Path
-from app.helpers.settings import settings
+from app.helpers import settings
 import torch
 import gc
 import logging

@@ -14,33 +14,12 @@ The interface provides secure user authentication, multi-conversation support, a
 
 ## ✨ Key Features
 
-### Production Architecture
-- **Microservices Design**: Decoupled FastAPI backend with domain-driven service separation
-- **Multi-User Support**: Complete JWT-based authentication and authorization system
-- **Horizontal Scalability**: Stateless architecture designed for cloud deployment and auto-scaling
-- **Database Connection Pooling**: PgBouncer integration for efficient PostgreSQL connection management
-- **Production Security**: Comprehensive security implementation with CORS, JWT tokens, and secure secret management
-- **Thread-Safe Operations**: Concurrent request handling with proper GPU resource locking for ML models
-
-### Advanced AI/ML Architecture
-- **Hybrid LLM Strategy**: Leverages specialized local model (Phi-3) for financial generation and cloud model (Gemini) for complex query analysis
-- **Fine-Tuned Local Model**: `microsoft/Phi-3-mini-4k-instruct` model specifically fine-tuned on financial Q&A datasets
-- **Intelligent Query Construction**: Advanced query refinement using conversation context, metadata extraction, and structured output generation
-- **High-Performance Inference**: Optimized with **Unsloth** for 2x faster, memory-efficient 4-bit quantized inference
-- **Advanced Reranking**: CrossEncoder model integration for optimal document relevance scoring
-
-### Enterprise Data Management
-- **Hybrid Retrieval System**: Sophisticated combination of ChromaDB vector search with BM25 keyword search for comprehensive document retrieval
-- **Semantic Caching**: Redis-based similarity caching with configurable similarity thresholds to reduce latency and API costs
-- **Persistent Conversation Memory**: PostgreSQL-backed conversation history with LangGraph checkpointing system
-- **Document Processing Pipeline**: Automated processing of SEC 10-K filings with intelligent chunking and metadata extraction
-- **Multi-Tenant Data Isolation**: Complete user data separation with conversation ownership verification
-
-### Observability & Production Monitoring
-- **Full Pipeline Tracing**: LangSmith integration for end-to-end monitoring, debugging, and performance analysis of the entire RAG pipeline
-- **Structured Logging**: Comprehensive error handling and structured logging throughout all services
-- **Performance Metrics**: Query latency tracking, cache hit rate monitoring, and model inference timing analysis
-- **Resource Management**: GPU memory optimization, connection pool monitoring, and service health checks
+- **Microservices Architecture**: Decoupled FastAPI backend with domain-driven design, JWT authentication, and multi-user support
+- **Hybrid LLM Strategy**: Fine-tuned Phi-3 (3.8B) for financial generation + Gemini Pro for query analysis and reasoning
+- **Advanced RAG Pipeline**: LangGraph workflow orchestration with hybrid retrieval (ChromaDB + BM25), CrossEncoder reranking, and semantic caching
+- **Production Infrastructure**: Docker Compose orchestration with PostgreSQL, Redis, PgBouncer connection pooling, and GPU acceleration
+- **Thread-Safe Operations**: Concurrent request handling with GPU resource locking for optimal multi-user performance
+- **Observability**: LangSmith integration for end-to-end tracing, monitoring, and debugging of the entire RAG pipeline
 
 ## 📊 Model Evaluation & Results
 
@@ -119,52 +98,32 @@ The system follows an optimized LangGraph workflow designed for maximum efficien
 
 ## 🛠️ Technical Stack
 
-### Backend & Infrastructure
-- **API Framework**: FastAPI with async/await for high-concurrency request handling
-- **Database**: PostgreSQL with async drivers (asyncpg) and connection pooling (PgBouncer)
-- **Caching**: Redis with vector similarity search capabilities and TTL management
-- **Migration Management**: Alembic for database schema versioning and deployment
-- **Process Management**: Production-ready service orchestration and deployment patterns
+* **FastAPI**: Serves as the high-concurrency async API framework.
+* **PostgreSQL & PgBouncer**: Used for the primary database with efficient connection pooling.
+* **Redis**: Provides high-performance semantic caching with vector search.
+* **Docker & Docker Compose**: Manages containerization and orchestration of the entire stack.
+* **Alembic**: Handles all database schema migrations.
+* **Fine-tuned Phi-3**: A local model for generating domain-specific financial answers.
+* **Google Gemini 1.5 Pro**: A cloud model for advanced query analysis and reasoning.
+* **Unsloth**: Optimizes the local LLM for faster inference with 4-bit quantization.
+* **PyTorch & CUDA**: The core machine learning framework with GPU acceleration.
+* **ChromaDB & BM25**: Combined for a hybrid retrieval system (semantic + keyword search).
+* **Cross-Encoder**: Reranks search results for improved relevance.
+* **LangGraph**: Orchestrates the complex, multi-step RAG agent workflow.
+* **LangSmith**: Provides end-to-end observability and tracing for the AI pipeline.
+* **JWT**: Secures the API with token-based authentication.
+* **Pydantic Settings**: Manages application configuration in a type-safe way.
+* **Ragas**: Used as the framework for evaluating the RAG pipeline's performance.
 
-### AI/ML Pipeline
-- **Answer Generation**: Fine-tuned `microsoft/Phi-3-mini-4k-instruct` with domain-specific training
-- **Query Analysis**: Google Gemini 1.5 Pro with structured output capabilities
-- **Fine-Tuning Engine**: Unsloth for efficient model optimization with 4-bit quantization
-- **ML Framework**: PyTorch with CUDA acceleration and memory optimization
-- **Embeddings**: `BAAI/bge-small-en-v1.5` via FastEmbed for efficient embedding generation
-- **Vector Database**: ChromaDB for semantic search with metadata filtering
-- **Keyword Search**: `rank_bm25` for traditional information retrieval
-- **Reranking**: `cross-encoder/ms-marco-MiniLM-L-6-v2` for document relevance optimization
-
-### Production & Monitoring
-- **Workflow Orchestration**: LangGraph for complex RAG pipeline management
-- **Observability**: LangSmith for comprehensive tracing, monitoring, and debugging
-- **Authentication**: JWT with secure token generation and validation
-- **Configuration**: Pydantic Settings for type-safe environment management
-- **Evaluation**: Ragas framework for comprehensive RAG system assessment
-- **Performance**: Thread-safe model management with GPU resource optimization
+**Production & Monitoring**: LangGraph workflow orchestration, LangSmith observability, JWT authentication, Pydantic Settings, Ragas evaluation framework
 
 ## 📋 Prerequisites
 
-### Hardware Requirements
-- **NVIDIA GPU**: CUDA 12.1+ compatible GPU required for local model inference
-- **VRAM**: Minimum 6GB, 8GB+ recommended for optimal Phi-3 performance
-- **RAM**: 16GB system memory recommended for full pipeline operation
-- **Storage**: 10GB+ free space for models, vector databases, and data storage
+**Hardware**: NVIDIA GPU (CUDA 12.1+, 6GB+ VRAM), 16GB RAM, 10GB+ storage
 
-### Software Requirements
-- **Python**: 3.11+ (64-bit) with pip and venv support
-- **Docker**: Latest version with Docker Compose for infrastructure services
-- **Git**: For repository management and version control
-- **CUDA Toolkit**: 12.1+ for GPU acceleration and PyTorch compatibility
+**Software**: Python 3.11+, Docker & Docker Compose, Git, CUDA Toolkit 12.1+
 
-### API Keys & Services
-Required API keys for full functionality:
-- **Google AI Studio**: Gemini Pro API access for query analysis
-- **LangSmith**: Monitoring and observability platform access
-- **SEC EDGAR API**: Financial data retrieval (data preparation notebooks)
-- **OpenRouter**: Multi-model access for evaluation (notebooks only)
-- **Hugging Face**: Model downloads and fine-tuning access
+**API Keys**: Google AI Studio (Gemini Pro), LangSmith monitoring, SEC EDGAR API (notebooks), OpenRouter (evaluation), Hugging Face (model access)
 
 ## 🚀 Installation & Setup
 
@@ -208,53 +167,8 @@ This project uses a `.env` file to manage secrets and configurations.
 
 2.  **Add your credentials**. Open the new `.env` file and replace the placeholder values (e.g., `your_google_api_key_here`) with your actual API keys and secrets.
 
-### 4. Production Infrastructure Setup
 
-Create dedicated Docker network for service communication:
-```bash
-docker network create financial-analyst-net
-```
-
-Deploy production-ready database infrastructure:
-
-**PostgreSQL Database Server:**
-```bash
-docker run --name my-postgres --network financial-analyst-net -d -p 5432:5432 \
-  -e POSTGRES_USER=myuser \
-  -e POSTGRES_PASSWORD=mypassword \
-  -e POSTGRES_DB=mydatabase \
-  -v postgres_data:/var/lib/postgresql/data \
-  postgres:16
-```
-
-**Redis Cache Server:**
-```bash
-docker run --name my-redis --network financial-analyst-net -d -p 6379:6379 \
-  -v redis-data:/data \
-  redis/redis-stack:7.2.0-v13
-```
-
-**PgBouncer Connection Pooler:**
-```bash
-docker run --name my-pgbouncer --network financial-analyst-net -d -p 6432:6432 \
-  -e POSTGRESQL_HOST=my-postgres \
-  -e POSTGRESQL_PORT=5432 \
-  -e POSTGRESQL_USERNAME=myuser \
-  -e POSTGRESQL_PASSWORD=mypassword \
-  -e POSTGRESQL_DATABASE=mydatabase \
-  -e PGBOUNCER_DATABASE=mydatabase \
-  -e PGBOUNCER_USERNAME=myuser \
-  -e PGBOUNCER_PASSWORD=mypassword \
-  -e PGBOUNCER_PORT=6432 \
-  -e PGBOUNCER_POOL_MODE=session \
-  -e PGBOUNCER_DEFAULT_POOL_SIZE=20 \
-  -e PGBOUNCER_MAX_CLIENT_CONN=1000 \
-  -e PGBOUNCER_MAX_DB_CONN=100 \
-  -e PGBOUNCER_AUTH_TYPE=md5 \
-  bitnami/pgbouncer:1.21.0
-```
-
-### 5. Data Pipeline & Model Preparation
+### 4. Data Pipeline & Model Preparation
 
 Execute the data preparation and model training pipeline in sequence:
 
@@ -282,23 +196,79 @@ Execute the data preparation and model training pipeline in sequence:
    - Compares fine-tuned vs base model performance
    - Generates detailed performance metrics
 
+### 5. Docker Infrastructure Deployment
+
+The entire production infrastructure (PostgreSQL, Redis, PgBouncer, and FastAPI application) is orchestrated using Docker Compose for simplified deployment and management.
+
+**Build and start all services:**
+```bash
+# Build the application image and start all services
+docker-compose up -d --build
+```
+
+**Verify service health:**
+```bash
+# Check that all services are running and healthy
+docker-compose ps
+```
+
+Expected output should show all services as "Up" with healthy status for postgres and redis.
+
+**View application logs:**
+```bash
+# Monitor real-time logs from all services
+docker-compose logs -f
+
+# View logs from specific service
+docker-compose logs -f app
+```
+
 ### 6. Database Schema Initialization
 
-Initialize production database schema:
+Initialize the production database schema using Alembic migrations:
+
 ```bash
-# Run database migrations
-alembic upgrade head
+# Run migrations inside the application container
+docker-compose exec app alembic upgrade head
 ```
 
-### 7. Production Application Launch
+This creates all necessary tables for users, conversations, and LangGraph checkpoints.
 
-Start the production-ready FastAPI server:
+### 7. Access the Application
+
+Once all services are running and healthy:
+
+- **Web Interface**: `http://localhost:8000`
+- **API Documentation**: `http://localhost:8000/docs` (Swagger UI)
+- **Health Check**: `http://localhost:8000/health`
+
+**Service Ports:**
+- FastAPI Application: `8000`
+- PostgreSQL: `5432`
+- PgBouncer: `6432`
+- Redis: `6379`
+
+### 8. Managing the Application
+
+**Stop all services:**
 ```bash
-# Development mode with hot reload
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+docker-compose down
 ```
 
-Access the application at `http://localhost:8000`
+**Stop and remove all data (including volumes):**
+```bash
+docker-compose down -v
+```
+
+**Restart specific service:**
+```bash
+docker-compose restart app
+```
+
+**View resource usage:**
+```bash
+docker stats
+```
 
 ## 📁 Project Structure
 
@@ -332,15 +302,15 @@ Access the application at `http://localhost:8000`
 │   │   │   └── ConversationController.py # Conversation DB operations
 │   │   └── routes.py                     # Conversation CRUD API
 │   ├── core/                             # Shared models and schemas
-│   │   ├── models/                     # SQLModel database models
-│   │   │   ├── __init__.py             # Exposes models
-│   │   │   ├── Conversation.py         # Conversation table model
-│   │   │   └── User.py                 # User table model
-│   │   └── schemas/                    # Pydantic API schemas
-│   │       ├── __init__.py             # Exposes schemas
-│   │       ├── Authentication.py       # Token-related schemas
-│   │       ├── Conversation.py         # Conversation API schemas
-│   │       └── User.py                 # User API schemas
+│   │   ├── models/                       # SQLModel database models
+│   │   │   ├── __init__.py               # Exposes models
+│   │   │   ├── Conversation.py           # Conversation table model
+│   │   │   └── User.py                   # User table model
+│   │   └── schemas/                      # Pydantic API schemas
+│   │       ├── __init__.py               # Exposes schemas
+│   │       ├── Authentication.py         # Token-related schemas
+│   │       ├── Conversation.py           # Conversation API schemas
+│   │       └── User.py                   # User API schemas
 │   ├── db/                               # Database configuration and sessions
 │   │   ├── __init__.py                   # Makes 'db' a package
 │   │   └── session.py                    # DB session dependency
@@ -349,14 +319,14 @@ Access the application at `http://localhost:8000`
 │   │   └── settings.py                   # Pydantic settings management
 │   └── main.py                           # FastAPI application entry point
 │
-├── web-ui/                             # Frontend web interface
-│   ├── css/                            # CSS styling
-│   │   └── styles.css                  # Main stylesheet
-│   ├── js/                             # JavaScript application logic
-│   │   └── app.js                      # Single-page application script
-│   ├── static/                         # Static assets
-│   │   └── financial-analysis.ico      # Favicon
-│   └── index.html                      # Main HTML entry point
+├── web-ui/                               # Frontend web interface
+│   ├── css/                              # CSS styling
+│   │   └── styles.css                    # Main stylesheet
+│   ├── js/                               # JavaScript application logic
+│   │   └── app.js                        # Single-page application script
+│   ├── static/                           # Static assets
+│   │   └── financial-analysis.ico        # Favicon
+│   └── index.html                        # Main HTML entry point
 │
 ├── Data/                                 # Data processing and model storage
 │   ├── chroma_db/                        # (Generated) ChromaDB vector database
@@ -367,9 +337,13 @@ Access the application at `http://localhost:8000`
 │   └── RAG_Pipeline_Evaluation.ipynb                         # Model evaluation
 │
 ├── migrations/                           # Alembic database migrations
+├── docker-compose.yml                    # Docker Compose orchestration
+├── Dockerfile                            # Application container definition
+├── .dockerignore                         # Docker build exclusions
 ├── requirements.txt                      # Python dependencies with CUDA PyTorch
 ├── alembic.ini                           # Database migration configuration
 ├── .env                                  # Environment variables configuration
+├── .env.example                          # Environment template
 └── README.md                             # Project documentation
 ```
 

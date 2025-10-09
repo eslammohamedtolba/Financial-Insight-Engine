@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # FastAPI Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: financial_analyst_app
+    # This section is critical for enabling GPU access inside the container.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mounts the local Data directory (models, vector databases) into the container.
+      - ./Data:/app/Data
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+    networks:
+      - financial-analyst-net
+    restart: unless-stopped
+
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:16
+    container_name: financial_analyst_postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - financial-analyst-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydatabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache Service
+  redis:
+    image: redis/redis-stack:7.2.0-v13
+    container_name: financial_analyst_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - financial-analyst-net
+    restart: unless-stopped
+
+  # PgBouncer Connection Pooler Service
+  pgbouncer:
+    image: bitnami/pgbouncer:1.21.0
+    container_name: financial_analyst_pgbouncer
+    ports:
+      - "6432:6432"
+    environment:
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_PORT: 5432
+      POSTGRESQL_USERNAME: myuser
+      POSTGRESQL_PASSWORD: mypassword
+      POSTGRESQL_DATABASE: mydatabase
+      PGBOUNCER_DATABASE: mydatabase
+      PGBOUNCER_USERNAME: myuser
+      PGBOUNCER_PASSWORD: mypassword
+      PGBOUNCER_PORT: 6432
+      PGBOUNCER_POOL_MODE: session
+      PGBOUNCER_DEFAULT_POOL_SIZE: 20
+      PGBOUNCER_MAX_CLIENT_CONN: 1000
+      PGBOUNCER_MAX_DB_CONN: 100
+      PGBOUNCER_AUTH_TYPE: md5
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - financial-analyst-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  financial-analyst-net:
+    driver: bridge
+

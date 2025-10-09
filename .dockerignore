@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE & Editor Configuration
+.vscode/
+.idea/
+
+# Large Data & Models (should be managed by a Docker volume)
+Data/
+
+# Development Notebooks
+*.ipynb
+
+# Caches
+unsloth_compiled_cache/
+
+# Python Virtual Environment
+venv/
+
+# Environment & Secrets
+.env
+.env.example
+
+# --- Docker ---
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Project Images & Diagrams
+Financial Analyst Assistant App.png
+Financial Analyst Assistant Graph.png
+
+# Documentation
+README.md

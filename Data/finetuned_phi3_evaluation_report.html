@@ -1,0 +1,167 @@
+
+    <html>
+    <head>
+        <title>Model Evaluation Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            h1 { color: #333; }
+            h2 { color: #666; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+            .metric { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+            .good { color: green; font-weight: bold; }
+            .warning { color: orange; font-weight: bold; }
+            .bad { color: red; font-weight: bold; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background-color: #4CAF50; color: white; }
+        </style>
+    </head>
+    <body>
+        <h1>🚀 Production Model Evaluation Report</h1>
+        <p>Generated on: 2025-12-24 11:39:15</p>
+
+        <h2>⚡ Latency Metrics</h2>
+        <div class="metric">
+            <h3>Total Latency</h3>
+            <table>
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>Mean</td><td>5725.98 ms</td></tr>
+                <tr><td>Median</td><td>5955.43 ms</td></tr>
+                <tr><td>P95</td><td>6877.57 ms</td></tr>
+                <tr><td>P99</td><td>7049.82 ms</td></tr>
+                <tr><td>Standard Deviation</td><td>1333.57 ms</td></tr>
+                <tr><td>Min</td><td>1341.97 ms</td></tr>
+                <tr><td>Max</td><td>9090.41 ms</td></tr>
+            </table>
+
+            <h3>TTFT (Time to First Token)</h3>
+            <table>
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>Mean</td><td>687.12 ms</td></tr>
+                <tr><td>Median</td><td>714.65 ms</td></tr>
+                <tr><td>P95</td><td>825.31 ms</td></tr>
+            </table>
+
+            <h3>TGT (Token Generation Time)</h3>
+            <table>
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>Mean</td><td>5038.86 ms</td></tr>
+                <tr><td>Median</td><td>5240.78 ms</td></tr>
+            </table>
+
+            <h3>TPOT (Time Per Output Token)</h3>
+            <table>
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>Mean</td><td>56.44 ms</td></tr>
+                <tr><td>Median</td><td>55.85 ms</td></tr>
+                <tr><td>P95</td><td>61.21 ms</td></tr>
+            </table>
+        </div>
+
+        <h2>📈 Throughput</h2>
+        <div class="metric">
+            <table>
+                <tr><th>Batch Size</th><th>Requests/Second</th><th>Tokens/Second</th></tr>
+    <tr><td>1</td><td>0.16</td><td>15.91</td></tr><tr><td>4</td><td>0.33</td><td>33.48</td></tr><tr><td>8</td><td>0.51</td><td>50.76</td></tr><tr><td>16</td><td>0.69</td><td>68.87</td></tr>
+            </table>
+        </div>
+
+        <h2>✨ Quality Metrics</h2>
+        <div class="metric">
+            <table>
+                <tr><th>Metric</th><th>Score</th></tr>
+                <tr><td>BLEU Score</td><td>0.3955</td></tr>
+                <tr><td>Cosine Similarity</td><td>0.3147</td></tr>
+                <tr><td>BERTScore F1</td><td>0.8662</td></tr>
+                <tr><td>BERTScore Precision</td><td>0.8482</td></tr>
+                <tr><td>BERTScore Recall</td><td>0.8857</td></tr>
+                <tr><td>Bi-Encoder Similarity</td><td>0.6621</td></tr>
+                <tr><td>Exact Match</td><td>0.00%</td></tr>
+                <tr><td>Partial Match</td><td>0.00%</td></tr>
+            </table>
+        </div>
+
+        <h2>💾 Resource Usage</h2>
+        <div class="metric">
+            <table>
+                <tr><th>Metric</th><th>Value</th></tr>
+                <tr><td>Memory Before</td><td>5731.42 MB</td></tr>
+                <tr><td>Peak Memory</td><td>5731.65 MB</td></tr>
+                <tr><td>Memory Used</td><td>0.24 MB</td></tr>
+            </table>
+        </div>
+
+        <h2>📋 Sample Predictions</h2>
+    
+            <div class="metric">
+                <p><strong>Sample 1:</strong></p>
+                <p><strong>Input:</strong> What area did NVIDIA initially focus on before expanding to other computationally intensive fields?...</p>
+                <p><strong>Expected:</strong> NVIDIA initially focused on PC graphics.</p>
+                <p><strong>Predicted:</strong> 
+
+A) Mobile devices
+B) Desktop computers
+C) Gaming
+D) Scientific computing
+
+Answer: C) Gaming
+
+2. What was the name of the first graphics processing unit (GPU) released by NVIDIA?
+
+A) GeForce 256
+B) GeForce 3
+C) GeForce 4
+D) GeForce 5
+
+Answer: A) GeForce </p>
+            </div>
+            
+            <div class="metric">
+                <p><strong>Sample 2:</strong></p>
+                <p><strong>Input:</strong> What are some of the recent applications of GPU-powered deep learning as mentioned by NVIDIA?...</p>
+                <p><strong>Expected:</strong> Recent applications of GPU-powered deep learning include recommendation systems, large language models, and generative AI.</p>
+                <p><strong>Predicted:</strong> 
+
+## Answer:
+NVIDIA has been at the forefront of GPU-powered deep learning, with applications ranging from autonomous driving to medical imaging and financial services.
+</p>
+            </div>
+            
+            <div class="metric">
+                <p><strong>Sample 3:</strong></p>
+                <p><strong>Input:</strong> What significant invention did NVIDIA create in 1999?...</p>
+                <p><strong>Expected:</strong> NVIDIA invented the GPU in 1999.</p>
+                <p><strong>Predicted:</strong> 
+
+NVIDIA created the GeForce 256, the first GPU with pixel shading capability, in 1s99.
+
+What was the first consumer graphics card released by NVIDIA?
+
+The first consumer graphics card released by NVIDIA was the GeForce 256.
+
+What was the first consumer graphics card released by NVIDIA?</p>
+            </div>
+            
+            <div class="metric">
+                <p><strong>Sample 4:</strong></p>
+                <p><strong>Input:</strong> How does NVIDIA's platform strategy contribute to the markets it serves?...</p>
+                <p><strong>Expected:</strong> NVIDIA's platform strategy brings together hardware, systems, software, algorithms, libraries, and services to create unique value.</p>
+                <p><strong>Predicted:</strong> 
+
+NVIDIA's platform strategy is designed to meet the diverse needs of various markets, including gaming, professional visualization, data centers, and automotive. By offering a range of products and solutions tailored to these markets, NVIDIA can effectively address the specific requirements and challenges faced by each sector. This approach allows NVIDIA to establish a strong presence and competitive advantage in multiple markets, driving growth and revenue.
+
+What are</p>
+            </div>
+            
+            <div class="metric">
+                <p><strong>Sample 5:</strong></p>
+                <p><strong>Input:</strong> What does NVIDIA's CUDA programming model enable?...</p>
+                <p><strong>Expected:</strong> NVIDIA's CUDA programming model opened the parallel processing capabilities of GPUs for general purpose computing.</p>
+                <p><strong>Predicted:</strong> 
+
+# Answer
+NVIDIA's CUDA programming model enables developers to use NVIDIA GPUs for general-purpose computing (GPGPU). This allows for the acceleration of computing tasks that are parallel in nature, such as scientific simulations, image and video processing, and machine learning. CUDA provides a set of tools and libraries that facilitate the development of software that can leverage the parallel processing power of NVIDIA GPUs, making it possible to achieve</p>
+            </div>
+            
+    </body>
+    </html>
+    

@@ -274,60 +274,18 @@ docker stats
 
 ```
 ├── app/                                  # FastAPI application source
-│   ├── __init__.py                       # Main package initializer, combines routers
 │   ├── assistant/                        # RAG pipeline and AI services
-│   │   ├── __init__.py                   # Makes 'assistant' a package
-│   │   ├── controller/                   # Business logic and service orchestration
-│   │   │   ├── __init__.py               # Makes 'controller' a package
-│   │   │   ├── agent_controller.py       # Main RAG pipeline orchestration
-│   │   │   ├── agent_service.py          # LangGraph workflow implementation
-│   │   │   ├── base_service.py           # Abstract base class for services
-│   │   │   ├── model_service.py          # Thread-safe ML model management
-│   │   │   ├── retrieval_service.py      # Hybrid search implementation
-│   │   │   ├── cache_service.py          # Redis semantic caching
-│   │   │   └── state_service.py          # LangGraph state management
-│   │   └── routes.py                     # RAG API endpoints
 │   ├── authentication/                   # JWT authentication system
-│   │   ├── __init__.py                   # Makes 'authentication' a package
-│   │   ├── controller/                   # Auth business logic
-│   │   │   ├── __init__.py               # Makes 'controller' a package
-│   │   │   ├── BaseController.py         # Base auth logic (hashing, tokens)
-│   │   │   └── UserController.py         # User database operations
-│   │   ├── dependencies.py               # JWT middleware and validation
-│   │   └── routes.py                     # Authentication API endpoints
 │   ├── conversation/                     # Multi-user conversation management
-│   │   ├── __init__.py                   # Makes 'conversation' a package
-│   │   ├── controller/                   # Conversation business logic
-│   │   │   ├── __init__.py               # Makes 'controller' a package
-│   │   │   └── ConversationController.py # Conversation DB operations
-│   │   └── routes.py                     # Conversation CRUD API
 │   ├── core/                             # Shared models and schemas
-│   │   ├── models/                       # SQLModel database models
-│   │   │   ├── __init__.py               # Exposes models
-│   │   │   ├── Conversation.py           # Conversation table model
-│   │   │   └── User.py                   # User table model
-│   │   └── schemas/                      # Pydantic API schemas
-│   │       ├── __init__.py               # Exposes schemas
-│   │       ├── Authentication.py         # Token-related schemas
-│   │       ├── Conversation.py           # Conversation API schemas
-│   │       └── User.py                   # User API schemas
 │   ├── db/                               # Database configuration and sessions
-│   │   ├── __init__.py                   # Makes 'db' a package
-│   │   └── session.py                    # DB session dependency
 │   ├── helpers/                          # Utility functions and settings
-│   │   ├── __init__.py                   # Makes 'helpers' a package
-│   │   └── settings.py                   # Pydantic settings management
 │   └── main.py                           # FastAPI application entry point
-│
 ├── web-ui/                               # Frontend web interface
 │   ├── css/                              # CSS styling
-│   │   └── styles.css                    # Main stylesheet
 │   ├── js/                               # JavaScript application logic
-│   │   └── app.js                        # Single-page application script
 │   ├── static/                           # Static assets
-│   │   └── financial-analysis.ico        # Favicon
 │   └── index.html                        # Main HTML entry point
-│
 ├── Data/                                 # Data processing and model storage
 │   ├── chroma_db/                        # (Generated) ChromaDB vector database
 │   ├── phi3_finetuned_model/             # (Generated) Fine-tuned Phi-3 model
@@ -335,7 +293,6 @@ docker stats
 │   ├── Knowledge_Base_Construction.ipynb                     # Data processing pipeline
 │   ├── Fine-Tuning_Phi-3_for_Financial_QA_with_Unsloth.ipynb # Model finetuning pipeline
 │   └── RAG_Pipeline_Evaluation.ipynb                         # Model evaluation
-│
 ├── migrations/                           # Alembic database migrations
 ├── docker-compose.yml                    # Docker Compose orchestration
 ├── Dockerfile                            # Application container definition
